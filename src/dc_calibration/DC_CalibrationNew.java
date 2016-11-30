@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.jlab.dc_calibration;
+package dc_calibration;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -30,6 +30,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+
+import org.jlab.dc_calibration.ReadRecDataForMinuit;
+import org.jlab.dc_calibration.ReadRecDataIn;
+import org.jlab.dc_calibration.TestEvent;
 
 public class DC_CalibrationNew extends WindowAdapter implements WindowListener, ActionListener, Runnable {
 

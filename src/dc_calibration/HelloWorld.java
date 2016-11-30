@@ -10,15 +10,11 @@
  * (________(                @author m.c.kunkel
  *  `------'
 */
-package org.jlab.dc_calibration;
+package dc_calibration;
 
-public class App2 {
-	public static void main(String[] args) {
-		// ReadDataForMinuit rd = new ReadDataForMinuit(fileName);
-		// ReadRecDataIn recDataIn = new ReadRecDataIn();
-		// recDataIn.processData();
-		DC_Calib mk = new DC_Calib();
+public class HelloWorld {
 
+	public static void main(String args[]) {
+		System.out.println("I am running my first Java program");
 	}
-
 }
