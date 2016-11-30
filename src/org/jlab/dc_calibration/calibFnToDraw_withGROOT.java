@@ -5,6 +5,9 @@
  */
 package org.jlab.dc_calibration;
 
+import static org.jlab.dc_calibration.Constants.cos30;
+import static org.jlab.dc_calibration.Constants.rad2deg;
+
 //kp: 8/15/16: Started from the copy of Will Phelp's code for doubleGaussianF1D class that he had written for me.
 import java.util.ArrayList;
 
@@ -18,8 +21,6 @@ import org.jlab.groot.math.Func1D;
 // public class calibFnToDraw_withGROOT extends F1D {
 public class calibFnToDraw_withGROOT extends Func1D {
 	int npx = 1000;
-	public static final double rad2deg = 180.0 / Math.PI;
-	public static final double cos30 = Math.cos(30.0 / rad2deg);
 
 	// public doubleGaussianF1D() {
 	public calibFnToDraw_withGROOT() {
@@ -30,7 +31,7 @@ public class calibFnToDraw_withGROOT extends Func1D {
 	// public doubleGaussianF1D(String name, double xmin, double xmax){
 	public calibFnToDraw_withGROOT(String name, double xmin, double xmax) {
 		super(name, xmin, xmax);
-		initParameters();
+		this.initParameters();
 	}
 
 	private void initParameters() {
@@ -52,20 +53,18 @@ public class calibFnToDraw_withGROOT extends Func1D {
 		double prevFitPars[] = { 62.92e-04, 1.35, 137.67, 148.02, 0.055, 1.0, 0.0, 0.3861 };
 
 		/*
-		 * this.setNParams(pars.size()); //Valid for old F1D (coatjava 2.4)
-		 * for(int loop = 0; loop < pars.size(); loop++){
-		 * this.parameter(loop).setName(pars.get(loop));
-		 * this.parameter(loop).setValue(prevFitPars[loop]); }
+		 * this.setNParams(pars.size()); //Valid for old F1D (coatjava 2.4) for(int loop = 0; loop < pars.size(); loop++){
+		 * this.parameter(loop).setName(pars.get(loop)); this.parameter(loop).setValue(prevFitPars[loop]); }
 		 */
 
 		for (int loop = 0; loop < pars.size(); loop++) {
 			this.addParameter(pars.get(loop)); // This is mandatory, else we get
-												// java.lang.IndexOutOfBoundsException
+			                                   // java.lang.IndexOutOfBoundsException
 			// this.setParameter(loop,prevFitPars[loop]); //Works, but
 			// this.setParameters(prevFitPars); below also works
 		}
 		this.setParameters(prevFitPars); // Valid for Func1D (groot) (see
-											// following link)
+		                                 // following link)
 		// https://github.com/gavalian/groot/blob/master/src/main/java/org/jlab/groot/math/Func1D.java
 
 	}
@@ -74,7 +73,7 @@ public class calibFnToDraw_withGROOT extends Func1D {
 	public void setParameters(double[] params) {
 		for (int i = 0; i < params.length; i++) {
 			this.setParameter(i, params[i]);
-			println("We set " + this.parameter(i).value());
+			// println("We set " + this.parameter(i).value());
 		}
 	}
 
@@ -100,7 +99,7 @@ public class calibFnToDraw_withGROOT extends Func1D {
 
 		// double X=docaByDocaMax, x=X*dMax, Xhat0 = X/cos30;
 		double x = xNorm * docaMax; // argument xNorm is actually x/docaMax,
-									// below we want real x
+		                            // below we want real x
 		double Xhat0 = x / Dc, deltanm = deltamn;
 		// double v0Par = par[0], deltanm = par[1], tMax = par[2]; if(SL==2)
 		// tMax = par[3];
@@ -117,7 +116,7 @@ public class calibFnToDraw_withGROOT extends Func1D {
 
 		// now, calculate m
 		double mPar = nPar + deltanm;// Actually it should be named deltamn and
-										// should be + in between //7/21/16
+		                             // should be + in between //7/21/16
 		// determine b from the constraint that the time = tmax at dist=dmax
 		double b = (tMax - docaMax / v0Par) / (1.0 - mPar / nPar);
 
@@ -135,8 +134,7 @@ public class calibFnToDraw_withGROOT extends Func1D {
 		// of the function at dmax*cos30minusalpha is equal to tmax
 
 		// parameter balpha (function of the 30 degree paramters a,n,m)
-		double balpha = (tMax - dmaxalpha / v0Par - a * Math.pow(cos30minusalpha, nPar))
-				/ Math.pow(cos30minusalpha, mPar);
+		double balpha = (tMax - dmaxalpha / v0Par - a * Math.pow(cos30minusalpha, nPar)) / Math.pow(cos30minusalpha, mPar);
 
 		// now calculate function
 		double xhatPowN = Math.pow(xhat, nPar), xhatPowM = Math.pow(xhat, mPar);
@@ -160,8 +158,7 @@ public class calibFnToDraw_withGROOT extends Func1D {
 	/*
 	 * //Only valid for extending old F1D, not valid for Func1D (10/5/16)
 	 * 
-	 * @Override public double getChiSquare(IDataSet ds,String options){ return
-	 * 0.0; }
+	 * @Override public double getChiSquare(IDataSet ds,String options){ return 0.0; }
 	 * 
 	 * @Override public double getChiSquare(IDataSet ds){ return 0.0; }
 	 */

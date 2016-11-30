@@ -215,7 +215,9 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 		bTestEvent.addActionListener(e1);
 		ReadRecDataIn e2 = new ReadRecDataIn();// fileName
 		bReadRecDataIn.addActionListener(e2);
-		ReadRecDataForMinuit e3 = new ReadRecDataForMinuit();
+		String fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit08.1.evio";
+
+		ReadDataForMinuit e3 = new ReadDataForMinuit(fileName);
 		bReadRecDataForMinuit.addActionListener(e3);
 		buttonClear.addActionListener(this);
 		listen();
@@ -274,13 +276,11 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 		try {
 			reader.join(1000);
 			pin.close();
-		} catch (Exception e) {
-		}
+		} catch (Exception e) {}
 		try {
 			reader2.join(1000);
 			pin2.close();
-		} catch (Exception e) {
-		}
+		} catch (Exception e) {}
 		System.exit(0);
 	}
 
@@ -315,8 +315,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 			while (Thread.currentThread() == reader) {
 				try {
 					this.wait(100);
-				} catch (InterruptedException ie) {
-				}
+				} catch (InterruptedException ie) {}
 				if (pin.available() != 0) {
 					String input = this.readLine(pin);
 					textArea.append(input);
@@ -328,8 +327,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 			while (Thread.currentThread() == reader2) {
 				try {
 					this.wait(100);
-				} catch (InterruptedException ie) {
-				}
+				} catch (InterruptedException ie) {}
 				if (pin2.available() != 0) {
 					String input = this.readLine(pin2);
 					textArea.append(input);
