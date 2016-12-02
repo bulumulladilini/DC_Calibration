@@ -43,17 +43,21 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.text.DefaultCaret;
 
 public class DC_Calib extends WindowAdapter implements WindowListener, ActionListener, Runnable {
 
 	private JFrame frame;
 	private JTextArea textArea;
+
 	protected Thread reader, reader2;
 	private boolean quit;
 
 	private final PipedInputStream pin = new PipedInputStream();
 	private final PipedInputStream pin2 = new PipedInputStream();
 
+	private File file;
 	Thread errorThrower; // just for testing (Throws an Exception at this
 	                     // Console
 	Thread mythread;
@@ -68,7 +72,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 	// file to be read and analyzed
 	private String fileName;
 	// buttons to be implemented
-	JButton bFileChooser, bTestEvent, bReadRecDataIn, bReconst, bReadRecDataForMinuit, ccdbWriter, buttonClear;
+	JButton bFileChooser, bTestEvent, bReadRecDataIn, bReconstruction, bTimeToDistance, ccdbWriter, buttonClear;
 
 	public DC_Calib() {
 		createFrame();
@@ -85,9 +89,13 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		Dimension frameSize = new Dimension((int) (screenSize.width / 1.25), (int) (screenSize.height / 1.5));
-		int x = (int) (frameSize.width / 2); // kp: quarter of screen width
-		int y = (int) (frameSize.height / 2);// kp: quarter of screen height
+		int x = (int) (frameSize.width / 2);
+		int y = (int) (frameSize.height / 2);
 		frame.setBounds(x, y, frameSize.width, frameSize.height);
+		frame.pack();
+		frame.setSize(frameSize.width, frameSize.height);
+		frame.setLocationRelativeTo(null);
+		frame.setVisible(true);
 	}
 
 	private void createBanner() {
@@ -107,15 +115,15 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 		bFileChooser = new JButton("Choose File", createImageIcon("/images/Open16.gif"));
 		bTestEvent = new JButton();
 		bReadRecDataIn = new JButton();
-		bReconst = new JButton();
-		bReadRecDataForMinuit = new JButton();
+		bReconstruction = new JButton();
+		bTimeToDistance = new JButton();
 		ccdbWriter = new JButton();
 		buttonClear = new JButton("Clear");
 
-		bTestEvent.setText("<html>" + "Estimate & Apply T0 Correction" + "</html>");
+		bTestEvent.setText("<html>" + "&emsp; &emsp; TestButton " + "<br>" + " Needs to be removed" + "</html>");
 		bReadRecDataIn.setText("<html>" + "Run Decoder" + "</html>");
-		bReconst.setText("<html>" + "Run Reconstruction" + "</html>");
-		bReadRecDataForMinuit.setText("<html>" + "Run DOCA-to-Time Fitter" + "</html>");
+		bReconstruction.setText("<html>" + "Run Reconstruction" + "</html>");
+		bTimeToDistance.setText("<html>" + "Run Time vs. Distance Fitter" + "</html>");
 		ccdbWriter.setText("<html>" + "Send Results to CCDB" + "</html>");
 	}
 
@@ -173,27 +181,31 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 	}
 
 	private void addToButtonPanel() {
-		buttonPanel.add(bReadRecDataIn);
-		buttonPanel.add(bReconst);
-		buttonPanel.add(bTestEvent);
-		buttonPanel.add(bReadRecDataForMinuit);
-		buttonPanel.add(ccdbWriter);
+		// buttonPanel.add(bTestEvent);
+		// buttonPanel.add(bReadRecDataIn);
+		buttonPanel.add(bReconstruction);
+		buttonPanel.add(bTimeToDistance);
+		// buttonPanel.add(ccdbWriter);
 	}
 
 	private void addToCenterPanel() {
 		addToTextArea();
 		centerPanel.add(new JScrollPane(panelImg), BorderLayout.WEST);
 		centerPanel.add(buttonPanel, BorderLayout.CENTER);
-		centerPanel.add(new JScrollPane(textArea), BorderLayout.EAST);
+		JScrollPane scroll = new JScrollPane(textArea);
+		scroll.setPreferredSize(new Dimension(325, 100));
+		scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		centerPanel.add(scroll, BorderLayout.EAST);
 
 	}
 
 	private void addToTextArea() {
 		textArea = new JTextArea();
 		textArea.setEditable(false);
-		textArea.setPreferredSize(new Dimension(300, 380));
 		textArea.setLineWrap(true);
-		// done below
+		textArea.setWrapStyleWord(true);
+		DefaultCaret caret = (DefaultCaret) textArea.getCaret();
+		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 	}
 
 	private void initFrame() {
@@ -213,13 +225,19 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 
 		TestEvent e1 = new TestEvent();
 		bTestEvent.addActionListener(e1);
-		ReadRecDataIn e2 = new ReadRecDataIn();// fileName
-		bReadRecDataIn.addActionListener(e2);
-		String fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit08.1.evio";
+		System.out.println("int listeners and I should be opening " + fileName);
+		fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/theDecodedFileR128T0corSec1_allEv.0_header.evio";
+		DCReconstruction dcReconstruction = new DCReconstruction(fileName);
+		bReconstruction.addActionListener(e -> {
+			new Thread(dcReconstruction).start();
+		});
+		// ReadRecDataIn e2 = new ReadRecDataIn();// fileName
+		// bReadRecDataIn.addActionListener(e2);
+		fileName = "src/files/recOutfile.evio";
 
-		ReadDataForMinuit e3 = new ReadDataForMinuit(fileName);
-		bReadRecDataForMinuit.addActionListener(e3);
-		buttonClear.addActionListener(this);
+		TimeToDistanceFitter e3 = new TimeToDistanceFitter(fileName);
+		bTimeToDistance.addActionListener(e3);
+		// buttonClear.addActionListener(this);
 		listen();
 	}
 
@@ -289,12 +307,37 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 		frame.dispose();
 	}
 
+	// public void actionPerformed(ActionEvent ev) {
+	// JFrame frame = new JFrame("JOptionPane showMessageDialog example1");
+	//
+	// // show a joptionpane dialog using showMessageDialog
+	// JOptionPane.showMessageDialog(frame, "Click OK to choose the input file ...");
+	//
+	// JFileChooser fileChooser = new JFileChooser();
+	// int returnVal = fileChooser.showOpenDialog(null);
+	// //if (selectedFile != null) {
+	// if (returnVal == JFileChooser.APPROVE_OPTION) {
+	// java.io.File file = fileChooser.getSelectedFile();
+	// java.io.File fileD = fileChooser.getCurrentDirectory();
+	// fileChosen = file.getName();
+	// filePathOnly = fileD.getAbsolutePath();
+	// fileChosenFullPath = file.getAbsolutePath();
+	// System.out.println("File name: " + fileChosen);
+	// System.out.println("File path: " + filePathOnly);
+	// System.out.println("File absoulte path: " + fileChosenFullPath);
+	//
+	// } else {
+	// System.out.println("File selection cancelled.");
+	// }
+	//
+	// processData();
+	// }
 	public synchronized void actionPerformed(ActionEvent evt) {
 		// Handle open button action.
 		if (evt.getSource() == bFileChooser) {
 			int returnVal = fc.showOpenDialog(fc);
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				File file = fc.getSelectedFile();
+				file = fc.getSelectedFile();
 				try {
 					this.fileName = file.getCanonicalPath();
 				} catch (IOException e) {

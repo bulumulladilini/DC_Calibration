@@ -44,7 +44,7 @@ import org.jlab.io.evio.EvioDataBank;
 import org.jlab.io.evio.EvioDataChain;
 import org.jlab.io.evio.EvioDataEvent;
 
-public class ReadDataForMinuit implements ActionListener {
+public class TimeToDistanceFitter implements ActionListener {
 	String file;
 	EvioDataChain reader = null;
 	EvioDataBank bnkHits = null;
@@ -83,7 +83,7 @@ public class ReadDataForMinuit implements ActionListener {
 	private Map<Integer, Double> gSegmAvgWireTBSegments = null;
 	private Map<Integer, Double> gFitChisqProbTBSegments = null;
 
-	public ReadDataForMinuit(String file) {
+	public TimeToDistanceFitter(String file) {
 		this.file = file;
 		this.reader = new EvioDataChain();
 		createHists();
@@ -565,11 +565,13 @@ public class ReadDataForMinuit implements ActionListener {
 	}
 
 	public static void main(String[] args) {
-		String fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit08.1.evio";
-		ReadDataForMinuit rd = new ReadDataForMinuit(fileName);
+		String fileName;
+		// fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit08.1.evio";
+		fileName = "src/files/recOutfile.evio";
+		TimeToDistanceFitter rd = new TimeToDistanceFitter(fileName);
 
 		rd.processData();
-		rd.drawHistograms();
+		// rd.drawHistograms();
 
 	}
 }

@@ -27,23 +27,9 @@ public class TestEvent implements ActionListener {
 	static long numEvents = 15000;// (long) 1e9; // events to process
 	static long printEventNr = 20000; // display progress
 
-	private int x = 0, y = 0;
-
-	public TestEvent() {
-		this.x = 3;
-		this.y = 5;
-	}
+	public TestEvent() {}
 
 	public void actionPerformed(ActionEvent ev) {
-		/*
-		 * //label2.setText("Label2: This time you can see more words here.");
-		 * if (y == 0) {
-		 * label.setText("Label2: This time you can see more words here."); y =
-		 * 1; } else if (y == 1) { label.setText(""); y = 0; }
-		 */
-		String myMessage = null;
-		myMessage = String.format("Hello from Dialog inside TestEvent class!! x=%d, y=%d", x, y);
-
 		JFrame frame = new JFrame("JOptionPane showMessageDialog example1");
 
 		// show a joptionpane dialog using showMessageDialog
@@ -53,52 +39,33 @@ public class TestEvent implements ActionListener {
 	}
 
 	public void processData() {
-		long printEvent;
-		if (debug) {
-			printEvent = 1;
-		} else {
-			printEvent = printEventNr;
-		}
-
 		int inFileNum = 1;
-		String inputFile = null;
-		String fDir = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12";
-		String fName = "reconstructedDataR128T0corT2DfromCCDBvarFit10";
+		int ievent = 0;
+		String fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit08.1.evio";
+
 		EvioDataChain reader = new EvioDataChain();
-		// for (String inputFile : inputFiles) {
 		for (int fN = 0; fN < inFileNum; fN++) {
-			// if (inputFile == null) { break; }
-			inputFile = String.format("%s\\%s.%d.evio", fDir, fName, fN);
-			reader.addFile(inputFile);
+			reader.addFile(fileName);
 		}
 		reader.open();
-		println("Opened the input data file!");
+		System.out.println("Opened the input data file!");
 
 		int counter = 0, NumEv2process = 20, nTBHits = 0;
 		EvioDataBank bnkHits = null;
 
 		// Now loop over all the events
-		while (reader.hasEvent()) {
+		while (reader.hasEvent() && ievent < 20) {
+			ievent++;
 			EvioDataEvent event = reader.getNextEvent();
-			boolean tbHits = false;
-			if (counter < NumEv2process) {
-				if (event.hasBank("TimeBasedTrkg::TBHits")) {
-					bnkHits = (EvioDataBank) event.getBank("TimeBasedTrkg::TBHits");
-					tbHits = true;
-					nTBHits = bnkHits.rows();
-					println("# of hist in this " + counter + "th event = " + nTBHits);
-				}
+			// if (counter < NumEv2process) {
+			if (event.hasBank("TimeBasedTrkg::TBHits")) {
+				bnkHits = (EvioDataBank) event.getBank("TimeBasedTrkg::TBHits");
+				nTBHits = bnkHits.rows();
+				System.out.println("# of hist in this " + counter + "th event = " + nTBHits);
+				// }
+				// counter++;
 			}
-			counter++;
 		}
-	}
-
-	// }
-	public static void println(String str) {
-		System.out.println(str);
-	}
-
-	public static void print(String str) {
-		System.out.print(str);
+		System.out.println("Done");
 	}
 }

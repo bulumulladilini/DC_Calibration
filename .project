@@ -14,4 +14,10 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<variableList>
+		<variable>
+			<name>CLAS12DIR</name>
+			<value>file:/Volumes/Mac_Storage/Work_Codes/CLAS12/RECONSTRUCTION/coatjava</value>
+		</variable>
+	</variableList>
 </projectDescription>
