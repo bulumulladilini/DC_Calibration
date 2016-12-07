@@ -10,9 +10,7 @@
  * (________(                @author m.c.kunkel
  *  `------'
 */
-package org.jlab.dc_calibration;
-
-import org.jlab.dc_calibration.DC_Calib;
+package org.jlab.dc_calibration.clients;
 
 public class App2 {
 	public static void main(String[] args) {

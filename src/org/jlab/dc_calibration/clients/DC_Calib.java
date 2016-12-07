@@ -15,7 +15,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.jlab.dc_calibration;
+package org.jlab.dc_calibration.clients;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -45,6 +45,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.text.DefaultCaret;
+
+import org.jlab.dc_calibration.TestEvent;
+import org.jlab.dc_calibration.domain.DCReconstruction;
+import org.jlab.dc_calibration.domain.TimeToDistanceFitter;
 
 public class DC_Calib extends WindowAdapter implements WindowListener, ActionListener, Runnable {
 

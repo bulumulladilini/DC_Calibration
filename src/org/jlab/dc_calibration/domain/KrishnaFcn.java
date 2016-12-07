@@ -2,14 +2,14 @@
  *
  * @author KPAdhikari
  */
-package org.jlab.dc_calibration;
+package org.jlab.dc_calibration.domain;
 
-import static org.jlab.dc_calibration.Constants.beta;
-import static org.jlab.dc_calibration.Constants.cos30;
-import static org.jlab.dc_calibration.Constants.rad2deg;
-import static org.jlab.dc_calibration.Constants.thEdgeVzH;
-import static org.jlab.dc_calibration.Constants.thEdgeVzL;
-import static org.jlab.dc_calibration.Constants.wpdist;
+import static org.jlab.dc_calibration.domain.Constants.beta;
+import static org.jlab.dc_calibration.domain.Constants.cos30;
+import static org.jlab.dc_calibration.domain.Constants.rad2deg;
+import static org.jlab.dc_calibration.domain.Constants.thEdgeVzH;
+import static org.jlab.dc_calibration.domain.Constants.thEdgeVzL;
+import static org.jlab.dc_calibration.domain.Constants.wpdist;
 
 import org.freehep.math.minuit.FCNBase;
 import org.jlab.groot.data.GraphErrors;

@@ -3,10 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.jlab.dc_calibration;
+package org.jlab.dc_calibration.domain;
 
-import static org.jlab.dc_calibration.Constants.cos30;
-import static org.jlab.dc_calibration.Constants.rad2deg;
+import static org.jlab.dc_calibration.domain.Constants.cos30;
+import static org.jlab.dc_calibration.domain.Constants.rad2deg;
 
 //kp: 8/15/16: Started from the copy of Will Phelp's code for doubleGaussianF1D class that he had written for me.
 import java.util.ArrayList;

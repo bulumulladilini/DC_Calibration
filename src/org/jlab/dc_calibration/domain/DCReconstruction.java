@@ -10,7 +10,7 @@
  * (________(                @author m.c.kunkel
  *  `------'
 */
-package org.jlab.dc_calibration;
+package org.jlab.dc_calibration.domain;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -106,10 +106,12 @@ public class DCReconstruction implements ActionListener, Runnable {
 		runAction();
 	}
 
-	// public static void main(String[] args) {
-	// String fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/theDecodedFileR128T0corSec1_30k.0_header.evio";
-	// DCReconstruction dcReconstruction = new DCReconstruction(fileName, true);
-	// // dcReconstruction.processEvents();
-	// }
+	public static void main(String[] args) {
+		// String fileName =
+		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/theDecodedFileR128T0corSec1_30k.0_header.evio";
+		String fileName = "/Volumes/Seagate_Storage/Work_Data/CLAS12/DC_Calibration/data/theDecodedFileR128T0corSec1_allEv.0_header.evio";
+		DCReconstruction dcReconstruction = new DCReconstruction(fileName, true);
+		// // dcReconstruction.processEvents();
+	}
 
 }

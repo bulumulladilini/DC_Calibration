@@ -10,7 +10,7 @@
  * (________(                @author m.c.kunkel
  *  `------'
 */
-package org.jlab.dc_calibration;
+package org.jlab.dc_calibration.domain;
 
 public final class Constants {
 
