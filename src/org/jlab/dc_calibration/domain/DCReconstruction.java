@@ -71,7 +71,7 @@ public class DCReconstruction implements ActionListener, Runnable {
 
 	private void processEvents() {// Eventually we want this to be multi-threaded
 		int icounter = 0;
-		while (reader.hasEvent()) {
+		while (reader.hasEvent() && icounter < 100) {
 			icounter++;
 			if ((icounter % 2000) == 0) {
 				System.out.println("processed " + icounter + " Events");
@@ -107,9 +107,8 @@ public class DCReconstruction implements ActionListener, Runnable {
 	}
 
 	public static void main(String[] args) {
-		// String fileName =
-		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/theDecodedFileR128T0corSec1_30k.0_header.evio";
-		String fileName = "/Volumes/Seagate_Storage/Work_Data/CLAS12/DC_Calibration/data/theDecodedFileR128T0corSec1_allEv.0_header.evio";
+		String fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/theDecodedFileR128T0corSec1_30k.0_header.evio";
+		// String fileName = "/Volumes/Seagate_Storage/Work_Data/CLAS12/DC_Calibration/data/theDecodedFileR128T0corSec1_allEv.0_header.evio";
 		DCReconstruction dcReconstruction = new DCReconstruction(fileName, true);
 		// // dcReconstruction.processEvents();
 	}
