@@ -76,6 +76,7 @@ public class Coordinate {
 			trial.get(new Coordinate(1, 1, 1, 1, 1, 1)).fill(randfunc3.random());
 
 		}
+
 		trial.get(new Coordinate(1, 1)).setTitleX("First");
 		trial.get(new Coordinate(2, 1)).setTitleX("Second");
 		trial.get(new Coordinate(1, 1, 1, 1, 1, 1)).setTitleX("Third");
