@@ -56,13 +56,19 @@ public class testApp {
 		}
 
 		EvioSource reader = new EvioSource();
-		reader.open("/Users/omcortes/Documents/EVIOfiles/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.10.evio");
+		String fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit1.0.evio";
+		reader.open(fileName);
+		// reader.open("/Users/omcortes/Documents/EVIOfiles/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.10.evio");
 		/* DC_Calib theDCcalib = new DC_Calib(); */
-
+		int counter = 0;
 		while (reader.hasEvent()) {
 			DataEvent event = reader.getNextEvent();
 
 			if (event.hasBank("TimeBasedTrkg::TBHits")) {
+				counter++;
+				if (counter % 10000 == 0) {
+					System.out.println("done " + counter + " events");
+				}
 				DataBank tbhitsBank = event.getBank("TimeBasedTrkg::TBHits");
 				int nTBHits = tbhitsBank.rows();
 				for (int i = 0; i < nTBHits; i++) {
@@ -226,7 +232,7 @@ public class testApp {
 				for (int j = 0; j < nTBTracks; j++) {
 
 					momentum.setXYZ(tbtracksBank.getDouble("t1_px", j), tbtracksBank.getDouble("t1_py", j),
-							tbtracksBank.getDouble("t1_pz", j));
+					        tbtracksBank.getDouble("t1_pz", j));
 					thetaVSmomenutm.fill(tbtracksBank.getDouble("p", j), momentum.theta());
 					phiVSmomenutm.fill(tbtracksBank.getDouble("p", j), momentum.phi());
 					thetaVSphi.fill(momentum.phi(), momentum.theta());

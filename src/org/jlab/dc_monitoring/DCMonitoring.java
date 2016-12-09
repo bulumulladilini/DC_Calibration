@@ -132,14 +132,19 @@ public class DCMonitoring {
 	}
 
 	private void processEvent() {
+		int counter = 0;
 		while (reader.hasEvent()) {
 			DataEvent event = reader.getNextEvent();
-			if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBCrosses")
-			        && event.hasBank("TimeBasedTrkg::TBTracks")) {
+			counter++;
+			if (counter % 10000 == 0)
+				System.out.println("done " + counter + " events");
+			if (event.hasBank("TimeBasedTrkg::TBHits"))
 				processTBHits(event);
+			if (event.hasBank("TimeBasedTrkg::TBCrosses"))
 				processTBCrosses(event);
+			if (event.hasBank("TimeBasedTrkg::TBTracks"))
 				processTBTracks(event);
-			}
+
 		}
 
 	}
@@ -150,7 +155,7 @@ public class DCMonitoring {
 			occupanciesByCoordinate.get(new Coordinate(bnkHits.getInt("sector", i) - 1, bnkHits.getInt("superlayer", i) - 1))
 			        .fill(bnkHits.getInt("wire", i), bnkHits.getInt("layer", i));
 			trkdocasvstime.get(new Coordinate(bnkHits.getInt("sector", i) - 1, bnkHits.getInt("superlayer", i) - 1))
-			        .fill(bnkHits.getInt("time", i), bnkHits.getInt("trkDoca", i));
+			        .fill(bnkHits.getDouble("time", i), bnkHits.getDouble("trkDoca", i));
 		}
 
 	}
@@ -160,6 +165,8 @@ public class DCMonitoring {
 		for (int i = 0; i < tbcrossesBank.rows(); i++) {
 			cross_uyvsux.get(new Coordinate(tbcrossesBank.getInt("sector", i) - 1)).fill(tbcrossesBank.getDouble("ux", i),
 			        tbcrossesBank.getDouble("uy", i));
+			cross_yvsx.get(new Coordinate(tbcrossesBank.getInt("sector", i) - 1)).fill(tbcrossesBank.getDouble("x", i),
+			        tbcrossesBank.getDouble("y", i));
 		}
 	}
 
@@ -176,15 +183,14 @@ public class DCMonitoring {
 
 	private void drawPlots() {
 		int canvasPlace = 0;
+
 		for (int i = 0; i < 6; i++) {
 			for (int j = 0; j < 6; j++) {
-				canvasPlace++;
-				if ((i + 1) + (j + 1) % 6 == 0)
-					canvasPlace = 0;
 				can1.cd(canvasPlace);
 				can1.draw(occupanciesByCoordinate.get(new Coordinate(i, j)));
 				can5.cd(canvasPlace);
 				can5.draw(trkdocasvstime.get(new Coordinate(i, j)));
+				canvasPlace++;
 
 			}
 
@@ -217,6 +223,7 @@ public class DCMonitoring {
 	}
 
 	public static void main(String[] args) {
-		DCMonitoring test = new DCMonitoring();
+		String fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit1.0.evio";
+		DCMonitoring test = new DCMonitoring(fileName);
 	}
 }
