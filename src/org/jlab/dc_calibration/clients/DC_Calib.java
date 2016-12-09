@@ -35,6 +35,7 @@ import java.io.PipedOutputStream;
 import java.io.PrintStream;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -48,6 +49,7 @@ import javax.swing.text.DefaultCaret;
 
 import org.jlab.dc_calibration.TestEvent;
 import org.jlab.dc_calibration.domain.DCReconstruction;
+import org.jlab.dc_calibration.domain.OrderOfAction;
 import org.jlab.dc_calibration.domain.TimeToDistanceFitter;
 
 public class DC_Calib extends WindowAdapter implements WindowListener, ActionListener, Runnable {
@@ -69,7 +71,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 	private JLabel banner;
 	// JPanels to be used
 	private JPanel bannerPanel, panelForWelcomeAndOpenFile, panelForFileOpen, panelImg, centerPanel;
-	private int gridSize = 3;
+	private int gridSize = 2;
 	private JPanel buttonPanel;
 	// a file chooser to be used to open file to analyze
 	JFileChooser fc;
@@ -77,6 +79,8 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 	private String fileName;
 	// buttons to be implemented
 	JButton bFileChooser, bTestEvent, bReadRecDataIn, bReconstruction, bTimeToDistance, ccdbWriter, buttonClear;
+	Dimension frameSize;
+	OrderOfAction OA = null;
 
 	public DC_Calib() {
 		createFrame();
@@ -92,7 +96,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 		frame.setLayout(new BorderLayout());// kp
 
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		Dimension frameSize = new Dimension((int) (screenSize.width / 1.25), (int) (screenSize.height / 1.5));
+		frameSize = new Dimension((int) (screenSize.width / 1.25), (int) (screenSize.height / 1.5));
 		int x = (int) (frameSize.width / 2);
 		int y = (int) (frameSize.height / 2);
 		frame.setBounds(x, y, frameSize.width, frameSize.height);
@@ -129,6 +133,10 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 		bReconstruction.setText("<html>" + "Run Reconstruction" + "</html>");
 		bTimeToDistance.setText("<html>" + "Run Time vs. Distance Fitter" + "</html>");
 		ccdbWriter.setText("<html>" + "Send Results to CCDB" + "</html>");
+
+		bReconstruction.setPreferredSize(new Dimension(frameSize.width / 3, frameSize.height / 3));
+		bTimeToDistance.setPreferredSize(new Dimension(frameSize.width / 3, frameSize.height / 3));
+
 	}
 
 	private void createPanels() {
@@ -147,6 +155,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 
 		buttonPanel = new JPanel();
 		buttonPanel.setLayout(new GridLayout(gridSize, gridSize, 1, 1));
+
 		addToButtonPanel();
 
 		centerPanel = new JPanel(new BorderLayout());
@@ -190,14 +199,28 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 		buttonPanel.add(bReconstruction);
 		buttonPanel.add(bTimeToDistance);
 		// buttonPanel.add(ccdbWriter);
+		OrderOfAction(2); // this int in OrderOfAction is the number of buttons activated in this method
+	}
+
+	private void OrderOfAction(int NButtons) {
+		OA = new OrderOfAction(NButtons);
+		OA.setbuttonorder(bReconstruction, 1);
+		OA.setbuttonorder(bTimeToDistance, 2);
 	}
 
 	private void addToCenterPanel() {
+		int width = (int) (frameSize.width);
+		int height = (int) (frameSize.height);
 		addToTextArea();
-		centerPanel.add(new JScrollPane(panelImg), BorderLayout.WEST);
+		JScrollPane images = new JScrollPane(panelImg);
+		images.setPreferredSize(new Dimension((int) (width / 3.5), (int) (height / 3.5)));
+		centerPanel.add(images, BorderLayout.WEST);
+
 		centerPanel.add(buttonPanel, BorderLayout.CENTER);
+		centerPanel.add(Box.createVerticalGlue(), BorderLayout.SOUTH);
+
 		JScrollPane scroll = new JScrollPane(textArea);
-		scroll.setPreferredSize(new Dimension(325, 100));
+		scroll.setPreferredSize(new Dimension((int) (width / 2), (int) (height / 2)));
 		scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		centerPanel.add(scroll, BorderLayout.EAST);
 
@@ -229,18 +252,31 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 
 		TestEvent e1 = new TestEvent();
 		bTestEvent.addActionListener(e1);
-		System.out.println("int listeners and I should be opening " + fileName);
-		fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/theDecodedFileR128T0corSec1_allEv.0_header.evio";
-		DCReconstruction dcReconstruction = new DCReconstruction(fileName);
+		System.out.println("in listeners and I should be opening " + fileName);
+
+		fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/theDecodedFileR128T0corSec1_30k.0_header.evio";
+		String outputFile = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/reconstructed.evio";
+
+		// DCReconstruction dcReconstruction = new DCReconstruction(fileName, outputFile);
+		DCReconstruction dcReconstruction = new DCReconstruction(OA, fileName, outputFile);
+
+		// bReconstruction.addActionListener(dcReconstruction);
 		bReconstruction.addActionListener(e -> {
 			new Thread(dcReconstruction).start();
 		});
 		// ReadRecDataIn e2 = new ReadRecDataIn();// fileName
 		// bReadRecDataIn.addActionListener(e2);
-		fileName = "src/files/recOutfile.evio";
+		// fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/recOutfile.evio";
+		fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit08.1.evio";
 
-		TimeToDistanceFitter e3 = new TimeToDistanceFitter(fileName);
-		bTimeToDistance.addActionListener(e3);
+		TimeToDistanceFitter e3 = new TimeToDistanceFitter(OA, fileName);
+		// TimeToDistanceFitter e3 = new TimeToDistanceFitter(fileName);
+
+		// bTimeToDistance.addActionListener(e3);
+		bTimeToDistance.addActionListener(e -> {
+			new Thread(e3).start();
+		});
+
 		// buttonClear.addActionListener(this);
 		listen();
 	}
@@ -355,6 +391,13 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 		} else if (evt.getSource() == buttonClear) {
 			textArea.setText("");
 		}
+		OA.buttonstatus(evt);
+
+		if (OA.isorderOk()) {
+			System.out.println("I am green and now I should do something here...");
+		} else
+			System.out.println("I am red and it is not my turn now ;( ");
+
 	}
 
 	public synchronized void run() {

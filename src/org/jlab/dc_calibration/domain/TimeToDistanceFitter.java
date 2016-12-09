@@ -58,40 +58,17 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private Map<Coordinate, H1F> h1timeSlTh = new HashMap<Coordinate, H1F>();
 	// Histograms to get ineff. as fn of trkDoca (NtrkDoca = trkDoca/docaMax)
 	private Map<Coordinate, H1F> h1trkDoca2Dar = new HashMap<Coordinate, H1F>(); // #############################################################
-	private Map<Coordinate, H1F> h1NtrkDoca2Dar = new HashMap<Coordinate, H1F>();// [3]
-	                                                                             // for
-	                                                                             // all
-	                                                                             // good
-	                                                                             // hits,
-	                                                                             // only
-	                                                                             // bad
-	                                                                             // (matchedHitID==
-	                                                                             // -1)
-	                                                                             // and
-	                                                                             // ratio
+	private Map<Coordinate, H1F> h1NtrkDoca2Dar = new HashMap<Coordinate, H1F>();// [3] for all good hits, only bad (matchedHitID == -1) and ratio
 	private Map<Coordinate, H1F> h1NtrkDocaP2Dar = new HashMap<Coordinate, H1F>();// ############################################################
 
 	private Map<Coordinate, H1F> h1trkDoca3Dar = new HashMap<Coordinate, H1F>(); // ############################################################
-	private Map<Coordinate, H1F> h1NtrkDoca3Dar = new HashMap<Coordinate, H1F>();// [3]
-	                                                                             // for
-	                                                                             // all
-	                                                                             // good
-	                                                                             // hits,
-	                                                                             // only
-	                                                                             // bad
-	                                                                             // (matchedHitID==
-	                                                                             // -1)
-	                                                                             // and
-	                                                                             // ratio
+	private Map<Coordinate, H1F> h1NtrkDoca3Dar = new HashMap<Coordinate, H1F>();// [3] for all good hits, only bad (matchedHitID == -1) and ratio
 	private Map<Coordinate, H1F> h1NtrkDocaP3Dar = new HashMap<Coordinate, H1F>();// ############################################################
 
 	private Map<Coordinate, H1F> h1trkDoca4Dar = new HashMap<Coordinate, H1F>();
-	private Map<Coordinate, H1F> h1wire4Dar = new HashMap<Coordinate, H1F>();// no
-	                                                                         // ratio
-	                                                                         // here
-	private Map<Coordinate, H1F> h1avgWire4Dar = new HashMap<Coordinate, H1F>();// no
-	                                                                            // ratio
-	                                                                            // here
+	private Map<Coordinate, H1F> h1wire4Dar = new HashMap<Coordinate, H1F>();// no ratio here
+
+	private Map<Coordinate, H1F> h1avgWire4Dar = new HashMap<Coordinate, H1F>();// no ratio here
 
 	private Map<Coordinate, H1F> h1fitChisqProbSeg4Dar = new HashMap<Coordinate, H1F>();
 
@@ -107,8 +84,18 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private Map<Integer, Double> gSegmAvgWireTBSegments = null;
 	private Map<Integer, Double> gFitChisqProbTBSegments = null;
 
+	private OrderOfAction OAInstance;
+	private boolean acceptorder = false;
+
 	public TimeToDistanceFitter(String file) {
 		this.file = file;
+		this.reader = new EvioDataChain();
+		createHists();
+	}
+
+	public TimeToDistanceFitter(OrderOfAction OAInstance, String file) {
+		this.file = file;
+		this.OAInstance = OAInstance;
 		this.reader = new EvioDataChain();
 		createHists();
 	}
@@ -587,11 +574,15 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		}
 	}
 
-	public void actionPerformed(ActionEvent ev) {
+	public void actionPerformed(ActionEvent e) {
+		OAInstance.buttonstatus(e);
+		acceptorder = OAInstance.isorderOk();
 		JFrame frame = new JFrame("JOptionPane showMessageDialog example1");
-		JOptionPane.showMessageDialog(frame, "Click OK to start processing the time to distance fitting...");
-		processData();
-
+		if (acceptorder) {
+			JOptionPane.showMessageDialog(frame, "Click OK to start processing the time to distance fitting...");
+			processData();
+		} else
+			System.out.println("I am red and it is not my turn now ;( ");
 	}
 
 	@Override
@@ -603,11 +594,14 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		String fileName;
 		// fileName =
 		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit08.1.evio";
-		fileName = "src/files/recOutfile.evio";
+		// fileName = "src/files/recOutfile.evio";
+		// fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/recOutfile.evio";
+		fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit08.1.evio";
+
 		TimeToDistanceFitter rd = new TimeToDistanceFitter(fileName);
 
 		rd.processData();
-		// rd.drawHistograms();
+		rd.drawHistograms();
 
 	}
 

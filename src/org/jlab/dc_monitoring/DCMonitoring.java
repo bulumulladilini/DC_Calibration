@@ -136,7 +136,7 @@ public class DCMonitoring {
 		while (reader.hasEvent()) {
 			DataEvent event = reader.getNextEvent();
 			counter++;
-			if (counter % 10000 == 0)
+			if (counter % 200 == 0)
 				System.out.println("done " + counter + " events");
 			if (event.hasBank("TimeBasedTrkg::TBHits"))
 				processTBHits(event);
@@ -183,7 +183,6 @@ public class DCMonitoring {
 
 	private void drawPlots() {
 		int canvasPlace = 0;
-
 		for (int i = 0; i < 6; i++) {
 			for (int j = 0; j < 6; j++) {
 				can1.cd(canvasPlace);
@@ -191,9 +190,7 @@ public class DCMonitoring {
 				can5.cd(canvasPlace);
 				can5.draw(trkdocasvstime.get(new Coordinate(i, j)));
 				canvasPlace++;
-
 			}
-
 		}
 		for (int i = 0; i < 6; i++) {
 			can3.cd(i);
@@ -223,7 +220,7 @@ public class DCMonitoring {
 	}
 
 	public static void main(String[] args) {
-		String fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit1.0.evio";
+		String fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/gemcData/out_phi120_oldcalctime_header.ev";
 		DCMonitoring test = new DCMonitoring(fileName);
 	}
 }
