@@ -26,6 +26,7 @@ import org.jlab.groot.data.H2F;
 import org.jlab.groot.graphics.EmbeddedCanvas;
 import org.jlab.io.base.DataBank;
 import org.jlab.io.base.DataEvent;
+import org.jlab.io.evio.EvioDataChain;
 import org.jlab.io.evio.EvioSource;
 
 public class DCMonitoring {
@@ -54,8 +55,11 @@ public class DCMonitoring {
 	// ############################################################
 
 	private EvioSource reader = null;
+	private EvioDataChain chain = null;
+	private boolean singleFile;
 
 	public DCMonitoring() {
+		this.singleFile = true;
 		init();
 		reader.open("/Users/omcortes/Documents/EVIOfiles/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.10.evio");
 		processEvent();
@@ -65,11 +69,35 @@ public class DCMonitoring {
 
 	public DCMonitoring(String fileName) {
 		this.fileName = fileName;
+		this.singleFile = true;
+
 		init();
 		reader.open(fileName);
 		processEvent();
 		drawPlots();
 		addCanvasToPane();
+	}
+
+	public DCMonitoring(EvioDataChain chain) {
+		this.chain = chain;
+		this.singleFile = false;
+
+		init();
+		reader.open(fileName);
+		processEvent();
+		drawPlots();
+		addCanvasToPane();
+	}
+
+	private void chooseDataSource(boolean singleFile) {
+		if (singleFile) {
+			reader.open(fileName);
+			System.out.println("Reading a single file");
+		} else {
+			System.out.println("Reading a chain of files");
+
+		}
+
 	}
 
 	private void setScreenSize() {
@@ -220,7 +248,8 @@ public class DCMonitoring {
 	}
 
 	public static void main(String[] args) {
-		String fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/gemcData/out_phi120_oldcalctime_header.ev";
+		String fileName =
+		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio";
 		DCMonitoring test = new DCMonitoring(fileName);
 	}
 }
