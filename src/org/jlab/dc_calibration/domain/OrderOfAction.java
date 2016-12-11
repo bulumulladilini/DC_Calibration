@@ -37,6 +37,7 @@ public class OrderOfAction {
 	// ***********************************************************************
 	// Read in existing buttons, define their initial colour and the order,
 	// they need to be pushed:
+
 	public void setbuttonorder(JButton AButton, int order) {
 		if (order <= NButtons && NeffectiveButtons <= NButtons) {
 			buttons[order - 1] = AButton;
@@ -60,6 +61,7 @@ public class OrderOfAction {
 			NeffectiveButtons++; // Count, how many buttons have actually been set
 		}
 	}
+
 	// ***********************************************************************
 
 	// ***********************************************************************

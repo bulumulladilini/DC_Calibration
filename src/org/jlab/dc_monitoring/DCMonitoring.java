@@ -27,11 +27,8 @@ import org.jlab.groot.graphics.EmbeddedCanvas;
 import org.jlab.io.base.DataBank;
 import org.jlab.io.base.DataEvent;
 import org.jlab.io.evio.EvioDataChain;
-import org.jlab.io.evio.EvioSource;
 
 public class DCMonitoring {
-
-	private String fileName;
 
 	private Dimension screensize = null;
 	private JFrame frame = null;
@@ -52,52 +49,23 @@ public class DCMonitoring {
 	private EmbeddedCanvas can5 = null;
 	private EmbeddedCanvas can6 = null;
 
-	// ############################################################
-
-	private EvioSource reader = null;
-	private EvioDataChain chain = null;
-	private boolean singleFile;
-
-	public DCMonitoring() {
-		this.singleFile = true;
-		init();
-		reader.open("/Users/omcortes/Documents/EVIOfiles/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.10.evio");
-		processEvent();
-		drawPlots();
-		addCanvasToPane();
-	}
+	private EvioDataChain reader = null;
 
 	public DCMonitoring(String fileName) {
-		this.fileName = fileName;
-		this.singleFile = true;
-
+		this.reader = new EvioDataChain();
+		reader.addFile(fileName);
 		init();
-		reader.open(fileName);
 		processEvent();
 		drawPlots();
 		addCanvasToPane();
 	}
 
-	public DCMonitoring(EvioDataChain chain) {
-		this.chain = chain;
-		this.singleFile = false;
-
+	public DCMonitoring(EvioDataChain reader) {
+		this.reader = reader;
 		init();
-		reader.open(fileName);
 		processEvent();
 		drawPlots();
 		addCanvasToPane();
-	}
-
-	private void chooseDataSource(boolean singleFile) {
-		if (singleFile) {
-			reader.open(fileName);
-			System.out.println("Reading a single file");
-		} else {
-			System.out.println("Reading a chain of files");
-
-		}
-
 	}
 
 	private void setScreenSize() {
@@ -156,7 +124,8 @@ public class DCMonitoring {
 		setJTabbedPane();
 		createHistograms();
 		createCanvas();
-		reader = new EvioSource();
+		// reader = new EvioSource();
+		reader.open();
 	}
 
 	private void processEvent() {
@@ -248,8 +217,18 @@ public class DCMonitoring {
 	}
 
 	public static void main(String[] args) {
+		// String fileName =
+		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio";
+		// DCMonitoring test = new DCMonitoring(fileName);
+
+		// Uncomment to test using EvioDataChain
+		EvioDataChain chain = new EvioDataChain();
 		String fileName =
 		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio";
-		DCMonitoring test = new DCMonitoring(fileName);
+		chain.addFile(fileName);
+		fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.2.evio";
+		chain.addFile(fileName);
+		DCMonitoring test = new DCMonitoring(chain);
+
 	}
 }
