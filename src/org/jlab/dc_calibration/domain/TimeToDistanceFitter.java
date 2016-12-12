@@ -552,9 +552,11 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 			String hNm = String.format("ResidualS%d", i);
 			h1Residual[i] = new H1F(hNm, 200, -1.0, 1.0);
 		}
-		for (int i = 0; i < nSL; i++) {
-			for (int j = 0; j < nThBinsVz; j++) {}
-		}
+
+		System.out.println("I should have created " + imgNm);
+		// for (int i = 0; i < nSL; i++) {
+		// for (int j = 0; j < nThBinsVz; j++) {}
+		// }
 	}
 
 	public void runFitter() {
@@ -610,6 +612,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		if (acceptorder) {
 			JOptionPane.showMessageDialog(frame, "Click OK to start processing the time to distance fitting...");
 			processData();
+			drawHistograms();
 		} else
 			System.out.println("I am red and it is not my turn now ;( ");
 	}
@@ -618,6 +621,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	public void run() {
 
 		processData();
+		drawHistograms();
+
 	}
 
 	public static void main(String[] args) {
