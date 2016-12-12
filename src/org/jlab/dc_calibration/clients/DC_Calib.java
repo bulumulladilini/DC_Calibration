@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -47,8 +48,6 @@ import javax.swing.JTextArea;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.text.DefaultCaret;
 
-import org.jlab.dc_calibration.TestEvent;
-import org.jlab.dc_calibration.domain.DCReconstruction;
 import org.jlab.dc_calibration.domain.OrderOfAction;
 import org.jlab.dc_calibration.domain.TimeToDistanceFitter;
 
@@ -71,7 +70,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 	private JLabel banner;
 	// JPanels to be used
 	private JPanel bannerPanel, panelForWelcomeAndOpenFile, panelForFileOpen, panelImg, centerPanel;
-	private int gridSize = 2;
+	private int gridSize = 1;
 	private JPanel buttonPanel;
 	// a file chooser to be used to open file to analyze
 	JFileChooser fc;
@@ -81,6 +80,9 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 	JButton bFileChooser, bTestEvent, bReadRecDataIn, bReconstruction, bTimeToDistance, ccdbWriter, buttonClear;
 	Dimension frameSize;
 	OrderOfAction OA = null;
+
+	File[] fileList = null;
+	ArrayList<String> fileArray = null;
 
 	public DC_Calib() {
 		createFrame();
@@ -196,7 +198,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 	private void addToButtonPanel() {
 		// buttonPanel.add(bTestEvent);
 		// buttonPanel.add(bReadRecDataIn);
-		buttonPanel.add(bReconstruction);
+		// buttonPanel.add(bReconstruction);
 		buttonPanel.add(bTimeToDistance);
 		// buttonPanel.add(ccdbWriter);
 		OrderOfAction(2); // this int in OrderOfAction is the number of buttons activated in this method
@@ -204,7 +206,9 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 
 	private void OrderOfAction(int NButtons) {
 		OA = new OrderOfAction(NButtons);
-		OA.setbuttonorder(bReconstruction, 1);
+		// OA.setbuttonorder(bReconstruction, 1);
+		OA.setbuttonorder(bFileChooser, 1);
+
 		OA.setbuttonorder(bTimeToDistance, 2);
 	}
 
@@ -248,36 +252,24 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 	}
 
 	private void addListeners() {
-		bFileChooser.addActionListener(this);
 
-		TestEvent e1 = new TestEvent();
-		bTestEvent.addActionListener(e1);
-		System.out.println("in listeners and I should be opening " + fileName);
-
-		fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/theDecodedFileR128T0corSec1_30k.0_header.evio";
-		String outputFile = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/reconstructed.evio";
-
-		// DCReconstruction dcReconstruction = new DCReconstruction(fileName, outputFile);
-		DCReconstruction dcReconstruction = new DCReconstruction(OA, fileName, outputFile);
-
-		// bReconstruction.addActionListener(dcReconstruction);
-		bReconstruction.addActionListener(e -> {
-			new Thread(dcReconstruction).start();
+		bFileChooser.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				OA.buttonstatus(e);
+				if (OA.isorderOk()) {
+					chooseFiles(e);
+					if (fileArray.size() == 0) {
+						System.err.println("There are no files selected ");
+						System.exit(1);
+					}
+					TimeToDistanceFitter e3 = new TimeToDistanceFitter(OA, fileArray);
+					bTimeToDistance.addActionListener(ee -> {
+						new Thread(e3).start();
+					});
+				}
+			}
 		});
-		// ReadRecDataIn e2 = new ReadRecDataIn();// fileName
-		// bReadRecDataIn.addActionListener(e2);
-		// fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/recOutfile.evio";
-		fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit08.1.evio";
-
-		TimeToDistanceFitter e3 = new TimeToDistanceFitter(OA, fileName);
-		// TimeToDistanceFitter e3 = new TimeToDistanceFitter(fileName);
-
-		// bTimeToDistance.addActionListener(e3);
-		bTimeToDistance.addActionListener(e -> {
-			new Thread(e3).start();
-		});
-
-		// buttonClear.addActionListener(this);
 		listen();
 	}
 
@@ -310,6 +302,17 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 		reader2 = new Thread(this);
 		reader2.setDaemon(true);
 		reader2.start();
+	}
+
+	private void chooseFiles(ActionEvent evt) {
+		fc.setMultiSelectionEnabled(true);
+		fc.showOpenDialog(null);
+		fileList = fc.getSelectedFiles();
+		fileArray = new ArrayList<String>();
+		for (File file : fileList) {
+			System.out.println("Readying file " + file);
+			fileArray.add(file.toString());
+		}
 	}
 
 	/** Returns an ImageIcon, or null if the path was invalid. */
@@ -347,31 +350,6 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 		frame.dispose();
 	}
 
-	// public void actionPerformed(ActionEvent ev) {
-	// JFrame frame = new JFrame("JOptionPane showMessageDialog example1");
-	//
-	// // show a joptionpane dialog using showMessageDialog
-	// JOptionPane.showMessageDialog(frame, "Click OK to choose the input file ...");
-	//
-	// JFileChooser fileChooser = new JFileChooser();
-	// int returnVal = fileChooser.showOpenDialog(null);
-	// //if (selectedFile != null) {
-	// if (returnVal == JFileChooser.APPROVE_OPTION) {
-	// java.io.File file = fileChooser.getSelectedFile();
-	// java.io.File fileD = fileChooser.getCurrentDirectory();
-	// fileChosen = file.getName();
-	// filePathOnly = fileD.getAbsolutePath();
-	// fileChosenFullPath = file.getAbsolutePath();
-	// System.out.println("File name: " + fileChosen);
-	// System.out.println("File path: " + filePathOnly);
-	// System.out.println("File absoulte path: " + fileChosenFullPath);
-	//
-	// } else {
-	// System.out.println("File selection cancelled.");
-	// }
-	//
-	// processData();
-	// }
 	public synchronized void actionPerformed(ActionEvent evt) {
 		// Handle open button action.
 		if (evt.getSource() == bFileChooser) {

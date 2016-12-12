@@ -225,6 +225,7 @@ public class DCMonitoring {
 		EvioDataChain chain = new EvioDataChain();
 		String fileName =
 		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio";
+
 		chain.addFile(fileName);
 		fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.2.evio";
 		chain.addFile(fileName);

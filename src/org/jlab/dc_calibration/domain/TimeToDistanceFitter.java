@@ -17,14 +17,18 @@ import static org.jlab.dc_calibration.domain.Constants.nLayer;
 import static org.jlab.dc_calibration.domain.Constants.nSL;
 import static org.jlab.dc_calibration.domain.Constants.nTh;
 import static org.jlab.dc_calibration.domain.Constants.nThBinsVz;
+import static org.jlab.dc_calibration.domain.Constants.parName;
+import static org.jlab.dc_calibration.domain.Constants.prevFitPars;
 import static org.jlab.dc_calibration.domain.Constants.rad2deg;
 import static org.jlab.dc_calibration.domain.Constants.thBins;
 import static org.jlab.dc_calibration.domain.Constants.thEdgeVzH;
 import static org.jlab.dc_calibration.domain.Constants.thEdgeVzL;
 import static org.jlab.dc_calibration.domain.Constants.wpdist;
 
+//import static org.jlab.dc_calibration.domain.Constants.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,6 +50,8 @@ import org.jlab.io.evio.EvioDataEvent;
 
 public class TimeToDistanceFitter implements ActionListener, Runnable {
 	String file;
+	private String[] files;
+	private ArrayList<String> fileArray;
 	EvioDataChain reader = null;
 	EvioDataBank bnkHits = null;
 	EvioDataBank bnkClust = null;
@@ -87,14 +93,23 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private OrderOfAction OAInstance;
 	private boolean acceptorder = false;
 
-	public TimeToDistanceFitter(String file) {
-		this.file = file;
+	private EmbeddedCanvas c0;
+	private EmbeddedCanvas c01;
+	private EmbeddedCanvas c03;
+	private EmbeddedCanvas c06;
+	private GraphErrors[][] profileX;
+	private GraphErrors[][] profileXvz;
+	private GraphErrors[][] profileY;
+	final double[] pars4FitLine = { prevFitPars[0], prevFitPars[1], prevFitPars[2], prevFitPars[3], prevFitPars[4], 1.0, 0.0, 0.3861 };
+
+	public TimeToDistanceFitter(ArrayList<String> files) {
+		this.fileArray = files;
 		this.reader = new EvioDataChain();
 		createHists();
 	}
 
-	public TimeToDistanceFitter(OrderOfAction OAInstance, String file) {
-		this.file = file;
+	public TimeToDistanceFitter(OrderOfAction OAInstance, ArrayList<String> files) {
+		this.fileArray = files;
 		this.OAInstance = OAInstance;
 		this.reader = new EvioDataChain();
 		createHists();
@@ -261,18 +276,46 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		}
 	}
 
+	private void createCanvas() {
+		c0 = new EmbeddedCanvas();
+		c0.setSize(4 * 400, 3 * 400);
+		c0.divide(4, 3);
+		c01 = new EmbeddedCanvas();
+		c01.setSize(3 * 400, 2 * 400);
+		c01.divide(1, 2);
+		c03 = new EmbeddedCanvas();
+		c03.setSize(4 * 400, nThBinsVz * 400);
+		c03.divide(4, nThBinsVz);
+		c06 = new EmbeddedCanvas();
+		c06.setSize(4 * 400, 6 * 400);
+		c06.divide(4, 6);
+	}
+
 	public void processData() {
-		reader.addFile(this.file);
+		int counter = 0;
+		int icounter = 0;
+		for (String str : fileArray) {
+			reader.addFile(str);
+		}
 		reader.open();
-		while (reader.hasEvent()) {// && counter < 100
+		while (reader.hasEvent()) {// && icounter < 100
+			icounter++;
+			if (icounter % 2000 == 0) {
+				System.out.println("Processed " + icounter + " events.");
+			}
 			EvioDataEvent event = reader.getNextEvent();
-			if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBSegments")
-			        && event.hasBank("TimeBasedTrkg::TBSegmentTrajectory")) {
+			if (event.hasBank("TimeBasedTrkg::TBSegmentTrajectory")) {
+				counter++;
+			}
+			if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBSegments")) {// && event.hasBank("TimeBasedTrkg::TBSegmentTrajectory")
 				processTBhits(event);
 				processTBSegments(event);
-				processTBSegmentTrajectory(event);
+				// // processTBSegmentTrajectory(event);
 			}
+
 		}
+		System.out.println("processed " + counter + " Events with TimeBasedTrkg::TBSegmentTrajectory entries");
+
 	}
 
 	private void processTBhits(EvioDataEvent event) {
@@ -418,25 +461,13 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	}
 
 	public void drawHistograms() {
-		final int nSupLayers = 2;
-		final int nFreePars = 5;
-		final String parName[] = { "v0", "deltamn", "tmax1", "tmax2", "distbeta" };
-		final double prevFitPars[] = { 62.92e-04, 1.35, 137.67, 148.02, 0.055 };
-		final double[] pars4FitLine = { prevFitPars[0], prevFitPars[1], prevFitPars[2], prevFitPars[3], prevFitPars[4], 1.0, 0.0, 0.3861 };
+		createCanvas();
 		String imgNm;
-		EmbeddedCanvas c0 = new EmbeddedCanvas();
-		c0.setSize(4 * 400, 3 * 400);
-		c0.divide(4, 3);
-		GraphErrors[][] profileX = new GraphErrors[nSL][2]; // 2 for 2 theta
-		                                                    // bins 0, 30
-		                                                    // //h2.getProfileX();
-		GraphErrors[][] profileY = new GraphErrors[nSL][2]; // 2 for 2 theta
-		                                                    // bins 0, 30
-		                                                    // //h2.getProfileX();
-		// GraphErrors profileY = h2.getProfileY();
+		profileX = new GraphErrors[nSL][2]; // 2 for 2 theta bins 0, 30 h2timeVtrkDoca.getProfileX();
+		profileY = new GraphErrors[nSL][2]; // 2 for 2 theta bins 0, 30 h2timeVtrkDoca.getProfileY();
+
 		for (int i = 0; i < nSL; i++) {
-			for (int j = 0; j < 2; j++) { // 2 thet bins +/-1 deg around 0 and
-			                              // 30 deg
+			for (int j = 0; j < 2; j++) { // 2 thet bins +/-1 deg around 0 and 30 deg
 				profileX[i][j] = h2timeVtrkDoca.get(new Coordinate(i, j)).getProfileX();
 				profileY[i][j] = h2timeVtrkDoca.get(new Coordinate(i, j)).getProfileY();
 				c0.cd(i * 2 + j);
@@ -450,9 +481,6 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		imgNm = "src/images/timeVsTrkDoca_and_Profiles.png";
 		c0.save(imgNm);
 
-		EmbeddedCanvas c01 = new EmbeddedCanvas();
-		c01.setSize(3 * 400, 2 * 400);
-		c01.divide(1, 2);
 		c01.cd(0);
 		c01.draw(h2timeVtrkDoca.get(new Coordinate(0, 0)));
 		c01.cd(1);
@@ -460,16 +488,78 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		imgNm = "src/images/timeVsTrkDoca_and_Profiles2.png";
 		c01.save(imgNm);
 
-		EmbeddedCanvas c03 = new EmbeddedCanvas();
-		c03.setSize(4 * 400, nThBinsVz * 400);
-		c03.divide(4, nThBinsVz);
-
-		GraphErrors[][] profileXvz = new GraphErrors[nSL][nThBinsVz];
+		profileXvz = new GraphErrors[nSL][nThBinsVz];
 		for (int i = 0; i < nSL; i++) {
 			for (int j = 0; j < nThBinsVz; j++) {
 				profileXvz[i][j] = h2timeVtrkDocaVZ.get(new Coordinate(i, j)).getProfileX();
 			}
 		}
+		// Lets Run the Fitter
+		runFitter();
+		// Done running fitter
+		for (int j = 0; j < nThBinsVz; j++) { // Row #
+			c03.cd(j * 4 + 0);
+			c03.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j))); // c0.draw(profileX[i][j],"same");
+			c03.cd(j * 4 + 1);
+			c03.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j))); // c0.draw(profileX[i][j],"same");
+			c03.cd(j * 4 + 2);
+			c03.draw(profileXvz[0][j]);
+			c03.cd(j * 4 + 3);
+			c03.draw(profileXvz[1][j]);
+		}
+		imgNm = "src/images/timeVsTrkDoca_and_ProfilesVZ.png";
+		c03.save(imgNm);
+
+		calibFnToDraw_withGROOT[][] myFitLinesGroot = new calibFnToDraw_withGROOT[nSL][nThBinsVz];
+		for (int i = 0; i < nSL; i++) {
+			for (int j = 0; j < nThBinsVz; j++) {
+				String hNm = String.format("myFitLinesS%dTh%d", i + 1, j);
+				System.out.println("debug10 ..");
+				myFitLinesGroot[i][j] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0);
+				myFitLinesGroot[i][j].setLineColor(3);
+				myFitLinesGroot[i][j].setLineWidth(3);
+				myFitLinesGroot[i][j].setLineStyle(4);
+				pars4FitLine[5] = 1.0 * (i + 1);
+				pars4FitLine[6] = 0.5 * (thEdgeVzL[j] + thEdgeVzH[j]);
+				pars4FitLine[7] = 2.0 * wpdist[i];
+				myFitLinesGroot[i][j].setParameters(pars4FitLine);
+				System.out.println("Groot f(0/0.5/1.0) = " + myFitLinesGroot[i][j].evaluate(0.0) + ", "
+				        + myFitLinesGroot[i][j].evaluate(0.5) + ", " + myFitLinesGroot[i][j].evaluate(1.0));
+
+			}
+		}
+
+		for (int j = 0; j < nThBinsVz; j++) {
+			c06.cd(j * 4 + 0);
+			c06.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j)));
+			c06.draw(myFitLinesGroot[0][j], "same");
+			c06.cd(j * 4 + 1);
+			c06.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j)));
+			c06.draw(myFitLinesGroot[1][j], "same");
+			c06.cd(j * 4 + 2);
+			c06.draw(profileXvz[0][j]);
+			c06.draw(myFitLinesGroot[0][j], "same");
+			c06.cd(j * 4 + 3);
+			c06.draw(profileXvz[1][j]);
+			c06.draw(myFitLinesGroot[1][j], "same");
+		}
+		imgNm = "src/images/myTestFitFunctionAllThBins_wdGroot.png";
+		c06.save(imgNm);
+
+		// 10/4/16: Trying to make plot of residuals for each superlayer
+		H1F[] h1Residual = new H1F[nSL];
+		for (int i = 0; i < nSL; i++) {
+			String hNm = String.format("ResidualS%d", i);
+			h1Residual[i] = new H1F(hNm, 200, -1.0, 1.0);
+		}
+		for (int i = 0; i < nSL; i++) {
+			for (int j = 0; j < nThBinsVz; j++) {}
+		}
+	}
+
+	public void runFitter() {
+		final int nSupLayers = 2;
+		final int nFreePars = 5;
 		// Now start minimization
 		KrishnaFcn theFCN = new KrishnaFcn(nSupLayers, nThBinsVz, profileXvz);
 		MnUserParameters upar = new MnUserParameters();
@@ -506,72 +596,11 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 			fPars[p] = userpar.value(parName[p]);
 			fErrs[p] = userpar.error(parName[p]);
 		}
-		for (int j = 0; j < nThBinsVz; j++) { // Row #
-			c03.cd(j * 4 + 0);
-			c03.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j))); // c0.draw(profileX[i][j],"same");
-			c03.cd(j * 4 + 1);
-			c03.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j))); // c0.draw(profileX[i][j],"same");
-			c03.cd(j * 4 + 2);
-			c03.draw(profileXvz[0][j]);
-			c03.cd(j * 4 + 3);
-			c03.draw(profileXvz[1][j]);
-		}
-		imgNm = "src/images/timeVsTrkDoca_and_ProfilesVZ.png";
-		c03.save(imgNm);
-
 		for (int i = 0; i < 5; i++)
 			pars4FitLine[i] = fPars[i];
 		pars4FitLine[5] = 1.0;
 		pars4FitLine[6] = 0.0;
 		pars4FitLine[7] = 0.3861;
-
-		calibFnToDraw_withGROOT[][] myFitLinesGroot = new calibFnToDraw_withGROOT[2][nThBinsVz];
-		for (int i = 0; i < nSL; i++) {
-			for (int j = 0; j < nThBinsVz; j++) {
-				String hNm = String.format("myFitLinesS%dTh%d", i + 1, j);
-				System.out.println("debug10 ..");
-				myFitLinesGroot[i][j] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0);
-				myFitLinesGroot[i][j].setLineColor(3);
-				myFitLinesGroot[i][j].setLineWidth(3);
-				myFitLinesGroot[i][j].setLineStyle(4);
-				pars4FitLine[5] = 1.0 * (i + 1);
-				pars4FitLine[6] = 0.5 * (thEdgeVzL[j] + thEdgeVzH[j]);
-				pars4FitLine[7] = 2.0 * wpdist[i];
-				myFitLinesGroot[i][j].setParameters(pars4FitLine);
-				System.out.println("Groot f(0/0.5/1.0) = " + myFitLinesGroot[i][j].evaluate(0.0) + ", "
-				        + myFitLinesGroot[i][j].evaluate(0.5) + ", " + myFitLinesGroot[i][j].evaluate(1.0));
-
-			}
-		}
-		EmbeddedCanvas c06 = new EmbeddedCanvas();
-		c06.setSize(4 * 400, 6 * 400);
-		c06.divide(4, 6);
-		for (int j = 0; j < nThBinsVz; j++) {
-			c06.cd(j * 4 + 0);
-			c06.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j)));
-			c06.draw(myFitLinesGroot[0][j], "same");
-			c06.cd(j * 4 + 1);
-			c06.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j)));
-			c06.draw(myFitLinesGroot[1][j], "same");
-			c06.cd(j * 4 + 2);
-			c06.draw(profileXvz[0][j]);
-			c06.draw(myFitLinesGroot[0][j], "same");
-			c06.cd(j * 4 + 3);
-			c06.draw(profileXvz[1][j]);
-			c06.draw(myFitLinesGroot[1][j], "same");
-		}
-		imgNm = "src/images/myTestFitFunctionAllThBins_wdGroot.png";
-		c06.save(imgNm);
-
-		// 10/4/16: Trying to make plot of residuals for each superlayer
-		H1F[] h1Residual = new H1F[nSL];
-		for (int i = 0; i < nSL; i++) {
-			String hNm = String.format("ResidualS%d", i);
-			h1Residual[i] = new H1F(hNm, 200, -1.0, 1.0);
-		}
-		for (int i = 0; i < nSL; i++) {
-			for (int j = 0; j < nThBinsVz; j++) {}
-		}
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -587,18 +616,22 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
 	@Override
 	public void run() {
+
 		processData();
 	}
 
 	public static void main(String[] args) {
 		String fileName;
-		// fileName =
-		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit08.1.evio";
-		// fileName = "src/files/recOutfile.evio";
-		// fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/recOutfile.evio";
-		fileName = "/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/reconstructedDataR128T0corT2DfromCCDBvarFit08.1.evio";
+		String fileName2;
 
-		TimeToDistanceFitter rd = new TimeToDistanceFitter(fileName);
+		fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio";
+		fileName2 =
+		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.2.evio";
+		ArrayList<String> fileArray = new ArrayList<String>();
+		fileArray.add(fileName);
+		fileArray.add(fileName2);
+
+		TimeToDistanceFitter rd = new TimeToDistanceFitter(fileArray);
 
 		rd.processData();
 		rd.drawHistograms();

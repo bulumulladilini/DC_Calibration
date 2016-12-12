@@ -75,6 +75,10 @@ public class KrishnaFcn implements FCNBase {
 		return chisq;// fval;
 	}
 
+	public double calcTimeFuncLinear() {
+		return 1.0;
+	}
+
 	public double calcTimeFunc(int debug, int SL, double thetaDeg, double docaByDocaMax, double[] par) // 9/4/16
 	{
 		// From one of M. Mestayer's email:
