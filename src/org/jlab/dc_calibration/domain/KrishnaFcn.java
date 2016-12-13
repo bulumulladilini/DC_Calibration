@@ -49,7 +49,7 @@ public class KrishnaFcn implements FCNBase {
 					docaNorm = profileX[sl][th].getDataX(i);
 					measTime = profileX[sl][th].getDataY(i);
 					measTimeErr = profileX[sl][th].getDataEY(i);
-					calcTime = isLinear ? calcTimeFunc(-1, sl + 1, docaNorm, par) : calcTimeFunc(-1, sl + 1, thetaDeg, docaNorm, par);
+					calcTime = isLinear ? calcTimeFunc(0, sl + 1, docaNorm, par) : calcTimeFunc(0, sl + 1, thetaDeg, docaNorm, par);
 
 					// 9/27/16: without docaNorm<0.9, the minimization was
 					// very unstable. For example,

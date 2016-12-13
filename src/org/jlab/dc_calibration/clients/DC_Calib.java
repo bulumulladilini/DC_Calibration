@@ -352,21 +352,22 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 
 	public synchronized void actionPerformed(ActionEvent evt) {
 		// Handle open button action.
-		if (evt.getSource() == bFileChooser) {
-			int returnVal = fc.showOpenDialog(fc);
-			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				file = fc.getSelectedFile();
-				try {
-					this.fileName = file.getCanonicalPath();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				System.out.println("Opening: " + fileName + "\n");
-			} else {
-				// log.append("Open command cancelled by user." + newline);
-				System.out.println("Open command cancelled by user.\n");
-			}
-		} else if (evt.getSource() == buttonClear) {
+		// if (evt.getSource() == bFileChooser) {
+		// int returnVal = fc.showOpenDialog(fc);
+		// if (returnVal == JFileChooser.APPROVE_OPTION) {
+		// file = fc.getSelectedFile();
+		// try {
+		// this.fileName = file.getCanonicalPath();
+		// } catch (IOException e) {
+		// e.printStackTrace();
+		// }
+		// System.out.println("Opening: " + fileName + "\n");
+		// } else {
+		// // log.append("Open command cancelled by user." + newline);
+		// System.out.println("Open command cancelled by user.\n");
+		// }
+		// } else if (evt.getSource() == buttonClear) {
+		if (evt.getSource() == buttonClear) {
 			textArea.setText("");
 		}
 		OA.buttonstatus(evt);

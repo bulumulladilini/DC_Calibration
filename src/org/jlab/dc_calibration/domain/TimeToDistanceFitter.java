@@ -93,6 +93,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private ArrayList<String> fileArray;
 	private EvioDataChain reader;
 	private OrderOfAction OAInstance;
+	private DCTabbedPane dcTabbedPane;
 
 	public TimeToDistanceFitter(ArrayList<String> files, boolean isLinearFit) {
 		this.fileArray = files;
@@ -105,6 +106,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		this.fileArray = files;
 		this.OAInstance = OAInstance;
 		this.reader = new EvioDataChain();
+		this.dcTabbedPane = new DCTabbedPane("PooperDooper");
 		this.isLinearFit = isLinearFit;
 		createHists();
 	}
@@ -285,7 +287,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		c06.divide(4, 6);
 	}
 
-	public void processData() {
+	protected void processData() {
 		int counter = 0;
 		int icounter = 0;
 		for (String str : fileArray) {
@@ -454,7 +456,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		}
 	}
 
-	public void drawHistograms() {
+	protected void drawHistograms() {
 		createCanvas();
 		String imgNm;
 		profileX = new GraphErrors[nSL][2]; // 2 for 2 theta bins 0, 30 h2timeVtrkDoca.getProfileX();
@@ -508,9 +510,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		for (int i = 0; i < nSL; i++) {
 			for (int j = 0; j < nThBinsVz; j++) {
 				String hNm = String.format("myFitLinesS%dTh%d", i + 1, j);
-				System.out.println("debug10 ..");
 				myFitLinesGroot[i][j] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0, isLinearFit);
-				myFitLinesGroot[i][j].setLineColor(3);
+				myFitLinesGroot[i][j].setLineColor(2);
 				myFitLinesGroot[i][j].setLineWidth(3);
 				myFitLinesGroot[i][j].setLineStyle(4);
 				pars4FitLine[5] = 1.0 * (i + 1);
@@ -546,11 +547,17 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 			String hNm = String.format("ResidualS%d", i);
 			h1Residual[i] = new H1F(hNm, 200, -1.0, 1.0);
 		}
+		// lets add the canvas's to the pane and draw it.
+		addToPane();
+	}
 
-		System.out.println("I should have created " + imgNm);
-		// for (int i = 0; i < nSL; i++) {
-		// for (int j = 0; j < nThBinsVz; j++) {}
-		// }
+	protected void addToPane() {
+		dcTabbedPane.addCanvasToPane("set 1", c0);
+		dcTabbedPane.addCanvasToPane("set 2", c01);
+		dcTabbedPane.addCanvasToPane("set 3", c03);
+		dcTabbedPane.addCanvasToPane("set 4", c06);
+		dcTabbedPane.showFrame();
+
 	}
 
 	public void runFitter() {
@@ -607,6 +614,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 			JOptionPane.showMessageDialog(frame, "Click OK to start processing the time to distance fitting...");
 			processData();
 			drawHistograms();
+			// DCTabbedPane test = new DCTabbedPane();
 		} else
 			System.out.println("I am red and it is not my turn now ;( ");
 	}
