@@ -82,8 +82,16 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private EmbeddedCanvas c01;
 	private EmbeddedCanvas c03;
 	private EmbeddedCanvas c06;
+
+	private EmbeddedCanvas sector1;
+	private EmbeddedCanvas sector2;
+	private EmbeddedCanvas sector3;
+	private EmbeddedCanvas sector4;
+	private EmbeddedCanvas sector5;
+	private EmbeddedCanvas sector6;
+
 	private GraphErrors[][] profileX;
-	private GraphErrors[][] profileXvz;
+	private GraphErrors[][][] profileXvz;
 	private GraphErrors[][] profileY;
 
 	private boolean acceptorder = false;
@@ -258,16 +266,17 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 				h2timeVtrkDoca.get(new Coordinate(i, j)).setTitle(hTtl);
 			}
 		}
+		for (int i = 0; i < 6; i++) {
+			for (int j = 0; j < nSL; j++) {
+				for (int k = 0; k < nThBinsVz; k++) { // nThBinsVz theta bins +/-2
+					// deg around 0, 10, 20, 30,
+					// 40, and 50 degs
+					hNm = String.format("Sector %d timeVtrkDocaS%dTh%02d", i, j, k);
+					h2timeVtrkDocaVZ.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.0, 150, 0.0, 200.0));
 
-		for (int i = 0; i < nSL; i++) {
-			for (int j = 0; j < nThBinsVz; j++) { // nThBinsVz theta bins +/-2
-				// deg around 0, 10, 20, 30,
-				// 40, and 50 degs
-				hNm = String.format("timeVtrkDocaS%dTh%02d", i, j);
-				h2timeVtrkDocaVZ.put(new Coordinate(i, j), new H2F(hNm, 200, 0.0, 1.0, 150, 0.0, 200.0));
-
-				hTtl = String.format("time vs |trkDoca| (SL=%d, th(%2.1f,%2.1f))", i + 1, thEdgeVzL[j], thEdgeVzH[j]); // Worked
-				h2timeVtrkDocaVZ.get(new Coordinate(i, j)).setTitle(hTtl);
+					hTtl = String.format("time vs. Doca (SL=%d, th(%2.1f,%2.1f))", j + 1, thEdgeVzL[k], thEdgeVzH[k]); // Worked
+					h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).setTitle(hTtl);
+				}
 			}
 		}
 	}
@@ -285,6 +294,26 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		c06 = new EmbeddedCanvas();
 		c06.setSize(4 * 400, 6 * 400);
 		c06.divide(4, 6);
+
+		sector1 = new EmbeddedCanvas();
+		sector2 = new EmbeddedCanvas();
+		sector3 = new EmbeddedCanvas();
+		sector4 = new EmbeddedCanvas();
+		sector5 = new EmbeddedCanvas();
+		sector6 = new EmbeddedCanvas();
+
+		sector1.setSize(4 * 400, 6 * 400);
+		sector1.divide(6, 6);
+		sector2.setSize(4 * 400, 6 * 400);
+		sector2.divide(6, 6);
+		sector3.setSize(4 * 400, 6 * 400);
+		sector3.divide(6, 6);
+		sector4.setSize(4 * 400, 6 * 400);
+		sector4.divide(6, 6);
+		sector5.setSize(4 * 400, 6 * 400);
+		sector5.divide(6, 6);
+		sector6.setSize(4 * 400, 6 * 400);
+		sector6.divide(6, 6);
 	}
 
 	protected void processData() {
@@ -344,6 +373,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		int nHitsInSeg = 0;
 		for (int j = 0; j < bnkSegs.rows(); j++) {
 			int superlayer = bnkSegs.getInt("superlayer", j);
+			int sector = bnkSegs.getInt("sector", j);
 			gSegmAvgWireTBSegments.put(bnkSegs.getInt("ID", j), bnkSegs.getDouble("avgWire", j));
 			gFitChisqProbTBSegments.put(bnkSegs.getInt("ID", j), bnkSegs.getDouble("fitChisqProb", j));
 
@@ -382,7 +412,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 						h2timeVtrkDoca.get(new Coordinate(superlayer - 1, 1)).fill(Math.abs(gTrkDoca), gTime);
 					if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBnVz > -1 && thBnVz < nThBinsVz) {
 						double docaNorm = gTrkDoca / docaMax;
-						h2timeVtrkDocaVZ.get(new Coordinate(superlayer - 1, thBnVz)).fill(Math.abs(docaNorm), gTime);
+						h2timeVtrkDocaVZ.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(docaNorm), gTime);
 					}
 				}
 			}
@@ -467,11 +497,11 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 				profileX[i][j] = h2timeVtrkDoca.get(new Coordinate(i, j)).getProfileX();
 				profileY[i][j] = h2timeVtrkDoca.get(new Coordinate(i, j)).getProfileY();
 				c0.cd(i * 2 + j);
-				c0.draw(h2timeVtrkDoca.get(new Coordinate(i, j))); // c0.draw(profileX[i][j],"same");
+				c0.draw(h2timeVtrkDoca.get(new Coordinate(i, j)));
 				c0.cd(i * 2 + j + 4);
-				c0.draw(profileX[i][j]); // c0.draw(h2timeVtrkDoca[i][j]);
+				c0.draw(profileX[i][j]);
 				c0.cd(i * 2 + j + 8);
-				c0.draw(profileY[i][j]); // c0.draw(h2timeVtrkDoca[i][j]);
+				c0.draw(profileY[i][j]);
 			}
 		}
 		imgNm = "src/images/timeVsTrkDoca_and_Profiles.png";
@@ -484,10 +514,12 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		imgNm = "src/images/timeVsTrkDoca_and_Profiles2.png";
 		c01.save(imgNm);
 
-		profileXvz = new GraphErrors[nSL][nThBinsVz];
-		for (int i = 0; i < nSL; i++) {
-			for (int j = 0; j < nThBinsVz; j++) {
-				profileXvz[i][j] = h2timeVtrkDocaVZ.get(new Coordinate(i, j)).getProfileX();
+		profileXvz = new GraphErrors[6][nSL][nThBinsVz];
+		for (int i = 0; i < 6; i++) {
+			for (int j = 0; j < nSL; j++) {
+				for (int k = 0; k < nThBinsVz; k++) {
+					profileXvz[i][j][k] = h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX();
+				}
 			}
 		}
 		// Lets Run the Fitter
@@ -495,51 +527,79 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		// Done running fitter
 		for (int j = 0; j < nThBinsVz; j++) { // Row #
 			c03.cd(j * 4 + 0);
-			c03.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j))); // c0.draw(profileX[i][j],"same");
+			c03.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, 0, j))); // c0.draw(profileX[i][j],"same");
 			c03.cd(j * 4 + 1);
-			c03.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j))); // c0.draw(profileX[i][j],"same");
+			c03.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, 1, j))); // c0.draw(profileX[i][j],"same");
 			c03.cd(j * 4 + 2);
-			c03.draw(profileXvz[0][j]);
+			c03.draw(profileXvz[0][0][j]);
 			c03.cd(j * 4 + 3);
-			c03.draw(profileXvz[1][j]);
+			c03.draw(profileXvz[0][1][j]);
 		}
 		imgNm = "src/images/timeVsTrkDoca_and_ProfilesVZ.png";
 		c03.save(imgNm);
 
-		calibFnToDraw_withGROOT[][] myFitLinesGroot = new calibFnToDraw_withGROOT[nSL][nThBinsVz];
-		for (int i = 0; i < nSL; i++) {
-			for (int j = 0; j < nThBinsVz; j++) {
-				String hNm = String.format("myFitLinesS%dTh%d", i + 1, j);
-				myFitLinesGroot[i][j] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0, isLinearFit);
-				myFitLinesGroot[i][j].setLineColor(2);
-				myFitLinesGroot[i][j].setLineWidth(3);
-				myFitLinesGroot[i][j].setLineStyle(4);
-				pars4FitLine[5] = 1.0 * (i + 1);
-				pars4FitLine[6] = 0.5 * (thEdgeVzL[j] + thEdgeVzH[j]);
-				pars4FitLine[7] = 2.0 * wpdist[i];
-				myFitLinesGroot[i][j].setParameters(pars4FitLine);
-				System.out.println("Groot f(0/0.5/1.0) = " + myFitLinesGroot[i][j].evaluate(0.0) + ", "
-				        + myFitLinesGroot[i][j].evaluate(0.5) + ", " + myFitLinesGroot[i][j].evaluate(1.0));
+		calibFnToDraw_withGROOT[][][] myFitLinesGroot = new calibFnToDraw_withGROOT[6][nSL][nThBinsVz];
+		for (int i = 0; i < 6; i++) {
+			for (int j = 0; j < nSL; j++) {
+				for (int k = 0; k < nThBinsVz; k++) {
+					String hNm = String.format("myFitLinesS%dTh%d", i + 1, j);
+					myFitLinesGroot[i][j][k] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0, isLinearFit);
+					myFitLinesGroot[i][j][k].setLineColor(2);
+					myFitLinesGroot[i][j][k].setLineWidth(3);
+					myFitLinesGroot[i][j][k].setLineStyle(4);
+					pars4FitLine[5] = 1.0 * (i + 1);
+					pars4FitLine[6] = 0.5 * (thEdgeVzL[j] + thEdgeVzH[j]);
+					pars4FitLine[7] = 2.0 * wpdist[i];
+					myFitLinesGroot[i][j][k].setParameters(pars4FitLine);
+					System.out.println("Groot f(0/0.5/1.0) = " + myFitLinesGroot[i][j][k].evaluate(0.0) + ", "
+					        + myFitLinesGroot[i][j][k].evaluate(0.5) + ", " + myFitLinesGroot[i][j][k].evaluate(1.0));
 
+				}
 			}
 		}
 
-		for (int j = 0; j < nThBinsVz; j++) {
-			c06.cd(j * 4 + 0);
-			c06.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j)));
-			c06.draw(myFitLinesGroot[0][j], "same");
-			c06.cd(j * 4 + 1);
-			c06.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j)));
-			c06.draw(myFitLinesGroot[1][j], "same");
-			c06.cd(j * 4 + 2);
-			c06.draw(profileXvz[0][j]);
-			c06.draw(myFitLinesGroot[0][j], "same");
-			c06.cd(j * 4 + 3);
-			c06.draw(profileXvz[1][j]);
-			c06.draw(myFitLinesGroot[1][j], "same");
+		for (int k = 0; k < nThBinsVz; k++) {
+			c06.cd(k * 4 + 0);
+			c06.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, 0, k)));
+			c06.draw(myFitLinesGroot[0][0][k], "same");
+			c06.cd(k * 4 + 1);
+			c06.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, 1, k)));
+			c06.draw(myFitLinesGroot[0][1][k], "same");
+			c06.cd(k * 4 + 2);
+			c06.draw(profileXvz[0][0][k]);
+			c06.draw(myFitLinesGroot[0][0][k], "same");
+			c06.cd(k * 4 + 3);
+			c06.draw(profileXvz[0][1][k]);
+			c06.draw(myFitLinesGroot[0][1][k], "same");
 		}
 		imgNm = "src/images/myTestFitFunctionAllThBins_wdGroot.png";
 		c06.save(imgNm);
+		int canvasPlace = 0;
+		for (int j = 0; j < nSL; j++) {
+			for (int k = 0; k < nThBinsVz; k++) {
+				sector1.cd(canvasPlace);
+				sector2.cd(canvasPlace);
+				sector3.cd(canvasPlace);
+				sector4.cd(canvasPlace);
+				sector5.cd(canvasPlace);
+				sector6.cd(canvasPlace);
+
+				canvasPlace++;
+
+				sector1.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j, k)));
+				sector1.draw(myFitLinesGroot[0][j][k], "same");
+				sector2.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j, k)));
+				sector2.draw(myFitLinesGroot[1][j][k], "same");
+				sector3.draw(h2timeVtrkDocaVZ.get(new Coordinate(2, j, k)));
+				sector3.draw(myFitLinesGroot[2][j][k], "same");
+				sector4.draw(h2timeVtrkDocaVZ.get(new Coordinate(3, j, k)));
+				sector4.draw(myFitLinesGroot[3][j][k], "same");
+				sector5.draw(h2timeVtrkDocaVZ.get(new Coordinate(4, j, k)));
+				sector5.draw(myFitLinesGroot[4][j][k], "same");
+				sector6.draw(h2timeVtrkDocaVZ.get(new Coordinate(5, j, k)));
+				sector6.draw(myFitLinesGroot[5][j][k], "same");
+			}
+		}
 
 		// 10/4/16: Trying to make plot of residuals for each superlayer
 		H1F[] h1Residual = new H1F[nSL];
@@ -552,10 +612,13 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	}
 
 	protected void addToPane() {
-		dcTabbedPane.addCanvasToPane("set 1", c0);
-		dcTabbedPane.addCanvasToPane("set 2", c01);
-		dcTabbedPane.addCanvasToPane("set 3", c03);
-		dcTabbedPane.addCanvasToPane("set 4", c06);
+		dcTabbedPane.addCanvasToPane("Sector 1", sector1);
+		dcTabbedPane.addCanvasToPane("Sector 2", sector2);
+		dcTabbedPane.addCanvasToPane("Sector 3", sector3);
+		dcTabbedPane.addCanvasToPane("Sector 4", sector4);
+		dcTabbedPane.addCanvasToPane("Sector 5", sector5);
+		dcTabbedPane.addCanvasToPane("Sector 6", sector6);
+
 		dcTabbedPane.showFrame();
 
 	}

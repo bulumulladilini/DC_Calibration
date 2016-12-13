@@ -6,6 +6,7 @@ package org.jlab.dc_calibration.domain;
 
 import static org.jlab.dc_calibration.domain.Constants.beta;
 import static org.jlab.dc_calibration.domain.Constants.cos30;
+import static org.jlab.dc_calibration.domain.Constants.nThBinsVz;
 import static org.jlab.dc_calibration.domain.Constants.rad2deg;
 import static org.jlab.dc_calibration.domain.Constants.thEdgeVzH;
 import static org.jlab.dc_calibration.domain.Constants.thEdgeVzL;
@@ -18,10 +19,10 @@ public class KrishnaFcn implements FCNBase {
 
 	private int slNum;
 	private int nThBins;
-	private GraphErrors[][] profileX;
+	private GraphErrors[][][] profileX;
 	private boolean isLinear = false;
 
-	public KrishnaFcn(int slNum, int nThBins, GraphErrors[][] profileX, boolean isLinear) {
+	public KrishnaFcn(int slNum, int nThBins, GraphErrors[][][] profileX, boolean isLinear) {
 		this.profileX = profileX;
 		this.slNum = slNum;
 		this.nThBins = nThBins;
@@ -40,32 +41,32 @@ public class KrishnaFcn implements FCNBase {
 		double measTime = 0.;
 		double measTimeErr = 0.;
 		double calcTime = 0.;
+		for (int sector = 0; sector < 6; sector++) {
+			for (int sl = 0; sl < slNum; sl++) {
+				for (int th = 1; th < nThBinsVz; th++) { // Using only some theta binsbetween 0 and 30 degrees
+					thetaDeg = 0.5 * (thEdgeVzL[th] + thEdgeVzH[th]);// No 0.5 factor used before 9/20/16
+					for (int i = 0; i < profileX[sector][sl][th].getDataSize(0); i++) {
+						docaNorm = profileX[sector][sl][th].getDataX(i);
+						measTime = profileX[sector][sl][th].getDataY(i);
+						measTimeErr = profileX[sector][sl][th].getDataEY(i);
+						calcTime = isLinear ? calcTimeFunc(0, sl + 1, docaNorm, par) : calcTimeFunc(0, sl + 1, thetaDeg, docaNorm, par);
 
-		for (int sl = 0; sl < slNum; sl++) {
-			for (int th = 1; th < 3; th++) { // Using only some theta bins
-			                                 // between 0 and 30 degress
-				thetaDeg = 0.5 * (thEdgeVzL[th] + thEdgeVzH[th]);// No 0.5 factor used before 9/20/16
-				for (int i = 0; i < profileX[sl][th].getDataSize(0); i++) {
-					docaNorm = profileX[sl][th].getDataX(i);
-					measTime = profileX[sl][th].getDataY(i);
-					measTimeErr = profileX[sl][th].getDataEY(i);
-					calcTime = isLinear ? calcTimeFunc(0, sl + 1, docaNorm, par) : calcTimeFunc(0, sl + 1, thetaDeg, docaNorm, par);
-
-					// 9/27/16: without docaNorm<0.9, the minimization was
-					// very unstable. For example,
-					// tmax for SL=2 (i.e. tmax2) came out around 150 when
-					// the # of events used was N=20000 or 200000
-					// where as it came out around 88 ns when N was
-					// somewhere in between such as 80000, 100000 etc.
-					// My guess was some of the bins with very low statistic
-					// had unrealistic errors bars and biased
-					// the minimization. When I used "delta = (measTime -
-					// calcTime);", the tmax2 result was more
-					// realistic (i.e., closer to 150 ns) than 88 ns.
-					// if(measTimeErr==measTimeErr && measTimeErr>0.0 )
-					if (measTimeErr == measTimeErr && measTimeErr > 0.0 && docaNorm < 0.9) {
-						delta = (measTime - calcTime) / measTimeErr; // error weighted deviation
-						chisq += delta * delta;
+						// 9/27/16: without docaNorm<0.9, the minimization was
+						// very unstable. For example,
+						// tmax for SL=2 (i.e. tmax2) came out around 150 when
+						// the # of events used was N=20000 or 200000
+						// where as it came out around 88 ns when N was
+						// somewhere in between such as 80000, 100000 etc.
+						// My guess was some of the bins with very low statistic
+						// had unrealistic errors bars and biased
+						// the minimization. When I used "delta = (measTime -
+						// calcTime);", the tmax2 result was more
+						// realistic (i.e., closer to 150 ns) than 88 ns.
+						// if(measTimeErr==measTimeErr && measTimeErr>0.0 )
+						if (measTimeErr == measTimeErr && measTimeErr > 0.0 && docaNorm < 0.9) {
+							delta = (measTime - calcTime) / measTimeErr; // error weighted deviation
+							chisq += delta * delta;
+						}
 					}
 				}
 			}
