@@ -22,9 +22,9 @@ import org.jlab.groot.graphics.EmbeddedCanvas;
 
 public class DCTabbedPane {
 
-	private Dimension screensize = null;
-	private JFrame frame = null;
-	private JTabbedPane tabbedPane = null;
+	private Dimension screensize;
+	private JFrame frame;
+	private JTabbedPane tabbedPane;
 	private String frameName;
 
 	public DCTabbedPane(String frameName) {
@@ -39,6 +39,8 @@ public class DCTabbedPane {
 	private void setJFrame() {
 		frame = new JFrame(frameName);
 		frame.setSize((int) (screensize.getHeight() * .75 * 1.618), (int) (screensize.getHeight() * .75));
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
 	}
 
 	private void setJTabbedPane() {
