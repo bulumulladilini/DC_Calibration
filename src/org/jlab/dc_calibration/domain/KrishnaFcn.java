@@ -19,11 +19,13 @@ public class KrishnaFcn implements FCNBase {
 	private int slNum;
 	private int nThBins;
 	private GraphErrors[][] profileX;
+	private boolean isLinear = false;
 
-	public KrishnaFcn(int slNum, int nThBins, GraphErrors[][] profileX) {
+	public KrishnaFcn(int slNum, int nThBins, GraphErrors[][] profileX, boolean isLinear) {
 		this.profileX = profileX;
 		this.slNum = slNum;
 		this.nThBins = nThBins;
+		this.isLinear = isLinear;
 	}
 
 	public double errorDef() {
@@ -31,10 +33,8 @@ public class KrishnaFcn implements FCNBase {
 	}
 
 	public double valueOf(double[] par) {
-		double c = par[0], m = par[1]; // straight line equation: y = m*x + c
 		double delta = 0.;
 		double chisq = 0.;
-		double fval = 0.;
 		double thetaDeg = 0.;
 		double docaNorm = 0.;
 		double measTime = 0.;
@@ -48,9 +48,8 @@ public class KrishnaFcn implements FCNBase {
 				for (int i = 0; i < profileX[sl][th].getDataSize(0); i++) {
 					docaNorm = profileX[sl][th].getDataX(i);
 					measTime = profileX[sl][th].getDataY(i);
-					// measTimeErr = profileX[sl][th].getErrorY(i);
 					measTimeErr = profileX[sl][th].getDataEY(i);
-					calcTime = calcTimeFunc(-1, sl + 1, thetaDeg, docaNorm, par);
+					calcTime = isLinear ? calcTimeFunc(-1, sl + 1, docaNorm, par) : calcTimeFunc(-1, sl + 1, thetaDeg, docaNorm, par);
 
 					// 9/27/16: without docaNorm<0.9, the minimization was
 					// very unstable. For example,
@@ -75,11 +74,19 @@ public class KrishnaFcn implements FCNBase {
 		return chisq;// fval;
 	}
 
-	public double calcTimeFuncLinear() {
-		return 1.0;
+	protected double calcTimeFunc(int debug, int SL, double docaByDocaMax, double[] par) {
+		double dMax = 2 * wpdist[SL - 1];
+		double x = docaByDocaMax * dMax;
+		double v0Par = par[0];
+		double calcTime = x / v0Par;
+		if (debug == 1)
+			System.out.println("v0Par = " + v0Par + " calcTime: " + calcTime);
+
+		return calcTime;
+
 	}
 
-	public double calcTimeFunc(int debug, int SL, double thetaDeg, double docaByDocaMax, double[] par) // 9/4/16
+	protected double calcTimeFunc(int debug, int SL, double thetaDeg, double docaByDocaMax, double[] par) // 9/4/16
 	{
 		// From one of M. Mestayer's email:
 		// Double_t time = x/v0 + a0*pow(Xhat0, n) + b0*pow(Xhat0,m); //Here
@@ -97,8 +104,10 @@ public class KrishnaFcn implements FCNBase {
 		double dMax = 2 * wpdist[SL - 1], Dc = dMax * cos30;
 		// double cos30 = Math.cos(30.0/rad2deg);//Now it's a global
 		// constant to avoid repeated calc. (see above main())
-		double X = docaByDocaMax, x = X * dMax, Xhat0 = X / cos30;
-		double v0Par = par[0], deltanm = par[1], tMax = par[2];
+		double x = docaByDocaMax * dMax;
+		double v0Par = par[0];
+		double deltanm = par[1];
+		double tMax = par[2];
 		if (SL == 2)
 			tMax = par[3];
 		double distbeta = par[4]; // 8/3/16: initial value given by Mac is 0.050 cm.

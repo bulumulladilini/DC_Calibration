@@ -263,7 +263,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 						System.err.println("There are no files selected ");
 						System.exit(1);
 					}
-					TimeToDistanceFitter e3 = new TimeToDistanceFitter(OA, fileArray);
+					TimeToDistanceFitter e3 = new TimeToDistanceFitter(OA, fileArray, true);
 					bTimeToDistance.addActionListener(ee -> {
 						new Thread(e3).start();
 					});

@@ -25,7 +25,6 @@ import static org.jlab.dc_calibration.domain.Constants.thEdgeVzH;
 import static org.jlab.dc_calibration.domain.Constants.thEdgeVzL;
 import static org.jlab.dc_calibration.domain.Constants.wpdist;
 
-//import static org.jlab.dc_calibration.domain.Constants.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -49,15 +48,10 @@ import org.jlab.io.evio.EvioDataChain;
 import org.jlab.io.evio.EvioDataEvent;
 
 public class TimeToDistanceFitter implements ActionListener, Runnable {
-	String file;
-	private String[] files;
-	private ArrayList<String> fileArray;
-	EvioDataChain reader = null;
-	EvioDataBank bnkHits = null;
-	EvioDataBank bnkClust = null;
-	EvioDataBank bnkSegs = null;
-	EvioDataBank bnkSegTrks = null;
-	EvioDataBank bnkCross = null;
+
+	private EvioDataBank bnkHits;
+	private EvioDataBank bnkSegs;
+	private EvioDataBank bnkSegTrks;
 
 	private Map<Coordinate, H1F> hArrWire = new HashMap<Coordinate, H1F>();
 	private Map<Coordinate, H1F> h1ThSL = new HashMap<Coordinate, H1F>();
@@ -66,32 +60,23 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private Map<Coordinate, H1F> h1trkDoca2Dar = new HashMap<Coordinate, H1F>(); // #############################################################
 	private Map<Coordinate, H1F> h1NtrkDoca2Dar = new HashMap<Coordinate, H1F>();// [3] for all good hits, only bad (matchedHitID == -1) and ratio
 	private Map<Coordinate, H1F> h1NtrkDocaP2Dar = new HashMap<Coordinate, H1F>();// ############################################################
-
 	private Map<Coordinate, H1F> h1trkDoca3Dar = new HashMap<Coordinate, H1F>(); // ############################################################
 	private Map<Coordinate, H1F> h1NtrkDoca3Dar = new HashMap<Coordinate, H1F>();// [3] for all good hits, only bad (matchedHitID == -1) and ratio
 	private Map<Coordinate, H1F> h1NtrkDocaP3Dar = new HashMap<Coordinate, H1F>();// ############################################################
-
 	private Map<Coordinate, H1F> h1trkDoca4Dar = new HashMap<Coordinate, H1F>();
 	private Map<Coordinate, H1F> h1wire4Dar = new HashMap<Coordinate, H1F>();// no ratio here
-
 	private Map<Coordinate, H1F> h1avgWire4Dar = new HashMap<Coordinate, H1F>();// no ratio here
-
 	private Map<Coordinate, H1F> h1fitChisqProbSeg4Dar = new HashMap<Coordinate, H1F>();
-
 	private Map<Coordinate, H2F> h2timeVtrkDoca = new HashMap<Coordinate, H2F>();
 	private Map<Coordinate, H2F> h2timeVtrkDocaVZ = new HashMap<Coordinate, H2F>();
 
-	private Map<Integer, Integer> layerMapTBHits = null;
-	private Map<Integer, Integer> wireMapTBHits = null;
-	private Map<Integer, Double> timeMapTBHits = null;
-	private Map<Integer, Double> trkDocaMapTBHits = null;
-
-	private Map<Integer, Integer> gSegmThBinMapTBSegments = null;
-	private Map<Integer, Double> gSegmAvgWireTBSegments = null;
-	private Map<Integer, Double> gFitChisqProbTBSegments = null;
-
-	private OrderOfAction OAInstance;
-	private boolean acceptorder = false;
+	private Map<Integer, Integer> layerMapTBHits;
+	private Map<Integer, Integer> wireMapTBHits;
+	private Map<Integer, Double> timeMapTBHits;
+	private Map<Integer, Double> trkDocaMapTBHits;
+	private Map<Integer, Integer> gSegmThBinMapTBSegments;
+	private Map<Integer, Double> gSegmAvgWireTBSegments;
+	private Map<Integer, Double> gFitChisqProbTBSegments;
 
 	private EmbeddedCanvas c0;
 	private EmbeddedCanvas c01;
@@ -100,18 +85,27 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private GraphErrors[][] profileX;
 	private GraphErrors[][] profileXvz;
 	private GraphErrors[][] profileY;
-	final double[] pars4FitLine = { prevFitPars[0], prevFitPars[1], prevFitPars[2], prevFitPars[3], prevFitPars[4], 1.0, 0.0, 0.3861 };
 
-	public TimeToDistanceFitter(ArrayList<String> files) {
+	private boolean acceptorder = false;
+	private boolean isLinearFit;
+	private double[] pars4FitLine = { prevFitPars[0], prevFitPars[1], prevFitPars[2], prevFitPars[3], prevFitPars[4], 1.0, 0.0, 0.3861 };
+
+	private ArrayList<String> fileArray;
+	private EvioDataChain reader;
+	private OrderOfAction OAInstance;
+
+	public TimeToDistanceFitter(ArrayList<String> files, boolean isLinearFit) {
 		this.fileArray = files;
 		this.reader = new EvioDataChain();
+		this.isLinearFit = isLinearFit;
 		createHists();
 	}
 
-	public TimeToDistanceFitter(OrderOfAction OAInstance, ArrayList<String> files) {
+	public TimeToDistanceFitter(OrderOfAction OAInstance, ArrayList<String> files, boolean isLinearFit) {
 		this.fileArray = files;
 		this.OAInstance = OAInstance;
 		this.reader = new EvioDataChain();
+		this.isLinearFit = isLinearFit;
 		createHists();
 	}
 
@@ -515,7 +509,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 			for (int j = 0; j < nThBinsVz; j++) {
 				String hNm = String.format("myFitLinesS%dTh%d", i + 1, j);
 				System.out.println("debug10 ..");
-				myFitLinesGroot[i][j] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0);
+				myFitLinesGroot[i][j] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0, isLinearFit);
 				myFitLinesGroot[i][j].setLineColor(3);
 				myFitLinesGroot[i][j].setLineWidth(3);
 				myFitLinesGroot[i][j].setLineStyle(4);
@@ -563,7 +557,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		final int nSupLayers = 2;
 		final int nFreePars = 5;
 		// Now start minimization
-		KrishnaFcn theFCN = new KrishnaFcn(nSupLayers, nThBinsVz, profileXvz);
+		KrishnaFcn theFCN = new KrishnaFcn(nSupLayers, nThBinsVz, profileXvz, isLinearFit);
 		MnUserParameters upar = new MnUserParameters();
 		double parSteps[] = { 0.00001, 0.001, 0.01, 0.01, 0.0001 };
 		double pLow[] = { prevFitPars[0] * 0.4, prevFitPars[1] * 0.0, prevFitPars[2] * 0.4, prevFitPars[3] * 0.4, prevFitPars[4] * 0.0 };
@@ -636,7 +630,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		fileArray.add(fileName);
 		fileArray.add(fileName2);
 
-		TimeToDistanceFitter rd = new TimeToDistanceFitter(fileArray);
+		TimeToDistanceFitter rd = new TimeToDistanceFitter(fileArray, true);
 
 		rd.processData();
 		rd.drawHistograms();

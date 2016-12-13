@@ -21,6 +21,7 @@ import org.jlab.groot.math.Func1D;
 // public class calibFnToDraw_withGROOT extends F1D {
 public class calibFnToDraw_withGROOT extends Func1D {
 	int npx = 1000;
+	private boolean isLinearFit;
 
 	// public doubleGaussianF1D() {
 	public calibFnToDraw_withGROOT() {
@@ -29,9 +30,10 @@ public class calibFnToDraw_withGROOT extends Func1D {
 	}
 
 	// public doubleGaussianF1D(String name, double xmin, double xmax){
-	public calibFnToDraw_withGROOT(String name, double xmin, double xmax) {
+	public calibFnToDraw_withGROOT(String name, double xmin, double xmax, boolean isLinearFit) {
 		super(name, xmin, xmax);
 		this.initParameters();
+		this.isLinearFit = isLinearFit;
 	}
 
 	private void initParameters() {
@@ -100,12 +102,13 @@ public class calibFnToDraw_withGROOT extends Func1D {
 		// double X=docaByDocaMax, x=X*dMax, Xhat0 = X/cos30;
 		double x = xNorm * docaMax; // argument xNorm is actually x/docaMax,
 		                            // below we want real x
-		double Xhat0 = x / Dc, deltanm = deltamn;
+		double deltanm = deltamn;
 		// double v0Par = par[0], deltanm = par[1], tMax = par[2]; if(SL==2)
 		// tMax = par[3];
 		// double distbeta = par[4]; //8/3/16: initial value given by Mac is
 		// 0.050 cm.
-		double v0Par = v0, tMax = tmax1;
+		double v0Par = v0;
+		double tMax = tmax1;
 		if (SL == 2)
 			tMax = tmax2;
 
@@ -125,7 +128,9 @@ public class calibFnToDraw_withGROOT extends Func1D {
 		double a = -b * mPar / nPar; // From one of the constraints
 		double alpha = thetaDeg; // = 0.0; //Local angle in degrees.
 		double cos30minusalpha = Math.cos((30. - alpha) / rad2deg); // =Math.cos(Math.toRadians(30.-alpha));
-		double xhat = x / docaMax, dmaxalpha = docaMax * cos30minusalpha, xhatalpha = x / dmaxalpha;
+		double xhat = x / docaMax;
+		double dmaxalpha = docaMax * cos30minusalpha;
+		double xhatalpha = x / dmaxalpha;
 
 		// now calculate the dist to time function for theta = 'alpha' deg.
 		// Assume a functional form with the SAME POWERS N and M and
@@ -138,7 +143,9 @@ public class calibFnToDraw_withGROOT extends Func1D {
 
 		// now calculate function
 		double xhatPowN = Math.pow(xhat, nPar), xhatPowM = Math.pow(xhat, mPar);
-		double term1 = x / v0, term2 = a * xhatPowN, term3 = balpha * xhatPowM;
+		double term1 = x / v0;
+		double term2 = a * xhatPowN;
+		double term3 = balpha * xhatPowM;
 		// double time = x/v0Par + a*pow(xhat, nPar) + balpha*pow(xhat, mPar);
 
 		// 8/3/16 ===== additing new contribution from beta-dependent time walk
@@ -151,7 +158,7 @@ public class calibFnToDraw_withGROOT extends Func1D {
 		// time = time + deltatime_beta;
 		// ===================== 8/3/16
 
-		double calcTime = term1 + term2 + term3 + deltatime_beta;
+		double calcTime = isLinearFit ? term1 : term1 + term2 + term3 + deltatime_beta;
 		return calcTime;
 	}
 
