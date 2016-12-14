@@ -23,6 +23,7 @@ public final class Constants {
 	protected static final double[] wpdist = { 0.3861, 0.4042, 0.6219, 0.6586, 0.9351, 0.9780 };
 
 	protected static final int nSL = 6;
+	protected static final int nSectors = 6;
 	protected static final int nLayer = 6;
 	protected static final double[] docaBins = { -0.8, -0.6, -0.4, -0.2, -0.0, 0.2, 0.4, 0.6, 0.8 };
 	protected static final int nHists = 8;
