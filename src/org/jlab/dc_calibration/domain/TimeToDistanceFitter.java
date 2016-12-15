@@ -15,6 +15,7 @@ package org.jlab.dc_calibration.domain;
 import static org.jlab.dc_calibration.domain.Constants.nHists;
 import static org.jlab.dc_calibration.domain.Constants.nLayer;
 import static org.jlab.dc_calibration.domain.Constants.nSL;
+import static org.jlab.dc_calibration.domain.Constants.nSectors;
 import static org.jlab.dc_calibration.domain.Constants.nTh;
 import static org.jlab.dc_calibration.domain.Constants.nThBinsVz;
 import static org.jlab.dc_calibration.domain.Constants.parName;
@@ -38,7 +39,7 @@ import org.freehep.math.minuit.FunctionMinimum;
 import org.freehep.math.minuit.MnMigrad;
 import org.freehep.math.minuit.MnStrategy;
 import org.freehep.math.minuit.MnUserParameters;
-import static org.jlab.dc_calibration.domain.Constants.nSectors;
+import org.jlab.dc_calibration.NTuple.NTuple;
 import org.jlab.groot.base.TStyle;
 import org.jlab.groot.data.GraphErrors;
 import org.jlab.groot.data.H1F;
@@ -97,18 +98,25 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
 	private boolean acceptorder = false;
 	private boolean isLinearFit;
-	//private double[] pars4FitLine = { prevFitPars[0], prevFitPars[1], prevFitPars[2], prevFitPars[3], prevFitPars[4], 1.0, 0.0, 0.3861 };
-        private double[][][] pars4FitLine = new double[nSectors][nSL][4];
-        
+	// private double[] pars4FitLine = { prevFitPars[0], prevFitPars[1], prevFitPars[2], prevFitPars[3], prevFitPars[4], 1.0, 0.0, 0.3861 };
+	private double[][][] pars4FitLine = new double[nSectors][nSL][4];
+
 	private ArrayList<String> fileArray;
 	private EvioDataChain reader;
 	private OrderOfAction OAInstance;
 	private DCTabbedPane dcTabbedPane;
 
+	// MK testing
+	private NTuple nTupletimeVtrkDocaVZ;
+	double[] tupleVars;
+
 	public TimeToDistanceFitter(ArrayList<String> files, boolean isLinearFit) {
 		this.fileArray = files;
 		this.reader = new EvioDataChain();
+		this.dcTabbedPane = new DCTabbedPane("PooperDooper");
 		this.isLinearFit = isLinearFit;
+		this.nTupletimeVtrkDocaVZ = new NTuple("testData", "Sector:SuperLayer:ThetaBin:Doca:Time");
+		this.tupleVars = new double[5];
 		createHists();
 	}
 
@@ -122,6 +130,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	}
 
 	private void createHists() {
+
 		TStyle.createAttributes();
 		String hNm = "";
 		String hTtl = "";
@@ -341,8 +350,9 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 			}
 
 		}
-		System.out.println("processed " + counter + " Events with TimeBasedTrkg::TBSegmentTrajectory entries");
-
+		System.out.println(
+		        "processed " + counter + " Events with TimeBasedTrkg::TBSegmentTrajectory entries from a total of " + icounter + " events");
+		saveNtuple();
 	}
 
 	private void processTBhits(EvioDataEvent event) {
@@ -415,6 +425,12 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 					if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBnVz > -1 && thBnVz < nThBinsVz) {
 						double docaNorm = gTrkDoca / docaMax;
 						h2timeVtrkDocaVZ.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(docaNorm), gTime);
+						tupleVars[0] = (double) sector;
+						tupleVars[1] = (double) superlayer;
+						tupleVars[2] = (double) thBnVz;
+						tupleVars[3] = Math.abs(docaNorm);
+						tupleVars[4] = gTime;
+						nTupletimeVtrkDocaVZ.addRow(tupleVars);
 					}
 				}
 			}
@@ -524,18 +540,16 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 				}
 			}
 		}
-                
-                
+
 		// Lets Run the Fitter
-		//runFitter();
-                for (int Sector = 0; Sector < nSectors; Sector++) {
-                for (int SL = 0; SL < nSL; SL++) {
-                        runFitter(Sector,SL);
-                    }
-                }
-                // Done running fitter
-                
-		
+		// runFitter();
+		for (int Sector = 0; Sector < nSectors; Sector++) {
+			for (int SL = 0; SL < nSL; SL++) {
+				runFitter(Sector, SL);
+			}
+		}
+		// Done running fitter
+
 		for (int j = 0; j < nThBinsVz; j++) { // Row #
 			c03.cd(j * 4 + 0);
 			c03.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, 0, j))); // c0.draw(profileX[i][j],"same");
@@ -549,23 +563,24 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		imgNm = "src/images/timeVsTrkDoca_and_ProfilesVZ.png";
 		c03.save(imgNm);
 
-                double [] pars4FitLineTmp = new double [4];
+		double[] pars4FitLineTmp = new double[4];
 		calibFnToDraw_withGROOT[][][] myFitLinesGroot = new calibFnToDraw_withGROOT[nSectors][nSL][nThBinsVz];
 		for (int i = 0; i < nSectors; i++) {
 			for (int j = 0; j < nSL; j++) {
-                            
-                                for(int iPar=0; iPar<4; iPar++) pars4FitLineTmp[iPar] = pars4FitLine[i][j][iPar];
-                                
+
+				for (int iPar = 0; iPar < 4; iPar++)
+					pars4FitLineTmp[iPar] = pars4FitLine[i][j][iPar];
+
 				for (int k = 0; k < nThBinsVz; k++) {
 					String hNm = String.format("myFitLinesS%dTh%d", i + 1, j);
 					myFitLinesGroot[i][j][k] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0, i, j, k, isLinearFit);
 					myFitLinesGroot[i][j][k].setLineColor(2);
 					myFitLinesGroot[i][j][k].setLineWidth(3);
 					myFitLinesGroot[i][j][k].setLineStyle(4);
-					//pars4FitLine[5] = 1.0 * (i + 1);
-					//pars4FitLine[6] = 0.5 * (thEdgeVzL[j] + thEdgeVzH[j]);
-					//pars4FitLine[7] = 2.0 * wpdist[i];
-                                        
+					// pars4FitLine[5] = 1.0 * (i + 1);
+					// pars4FitLine[6] = 0.5 * (thEdgeVzL[j] + thEdgeVzH[j]);
+					// pars4FitLine[7] = 2.0 * wpdist[i];
+
 					myFitLinesGroot[i][j][k].setParameters(pars4FitLineTmp);
 					System.out.println("Groot f(0/0.5/1.0) = " + myFitLinesGroot[i][j][k].evaluate(0.0) + ", "
 					        + myFitLinesGroot[i][j][k].evaluate(0.5) + ", " + myFitLinesGroot[i][j][k].evaluate(1.0));
@@ -616,7 +631,12 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 				sector6.draw(myFitLinesGroot[5][j][k], "same");
 			}
 		}
-
+		sector1.save("src/images/sector1.png");
+		sector2.save("src/images/sector2.png");
+		sector3.save("src/images/sector3.png");
+		sector4.save("src/images/sector4.png");
+		sector5.save("src/images/sector5.png");
+		sector6.save("src/images/sector6.png");
 		// 10/4/16: Trying to make plot of residuals for each superlayer
 		H1F[] h1Residual = new H1F[nSL];
 		for (int i = 0; i < nSL; i++) {
@@ -639,15 +659,14 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
 	}
 
-        
-        	public void runFitter(int Sector, int SL) {
-		
+	public void runFitter(int Sector, int SL) {
+
 		final int nFreePars = 4;
-                
-                //initial guess of tMax for the 6 superlayers (cell sizes are different for each)
-                //  This is one of the free parameters (par[2], but fixed for now.)
-                double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 }; 
-                
+
+		// initial guess of tMax for the 6 superlayers (cell sizes are different for each)
+		// This is one of the free parameters (par[2], but fixed for now.)
+		double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 };
+
 		// Now start minimization
 		KrishnaFcn theFCN = new KrishnaFcn(Sector, SL, nThBinsVz, profileXvz, isLinearFit);
 		MnUserParameters upar = new MnUserParameters();
@@ -658,9 +677,9 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 			upar.add(parName[p], prevFitPars[p], parSteps[p], pLow[p], pHigh[p]);
 		}
 
-		upar.setValue(2, tMaxSL[SL]);//155.0); //tMax for SLth superlayer		
-		upar.fix(2);                           //fixed for now.
-		
+		upar.setValue(2, tMaxSL[SL]);// 155.0); //tMax for SLth superlayer
+		upar.fix(2); // fixed for now.
+
 		System.out.println("Initial parameters: " + upar);
 
 		System.out.println("start migrad");
@@ -685,11 +704,11 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		}
 		for (int i = 0; i < nFreePars; i++)
 			pars4FitLine[Sector][SL][i] = fPars[i];
-		//pars4FitLine[5] = 1.0;
-		//pars4FitLine[6] = 0.0;
-		//pars4FitLine[7] = 0.3861;
+		// pars4FitLine[5] = 1.0;
+		// pars4FitLine[6] = 0.0;
+		// pars4FitLine[7] = 0.3861;
 	}
-        
+
 	public void actionPerformed(ActionEvent e) {
 		OAInstance.buttonstatus(e);
 		acceptorder = OAInstance.isorderOk();
@@ -711,21 +730,40 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
 	}
 
+	private void saveNtuple() {
+		nTupletimeVtrkDocaVZ.write("src/files/pionTest.evio");
+	}
+
 	public static void main(String[] args) {
 		String fileName;
 		String fileName2;
 
 		fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio";
-		fileName2 =
-		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.2.evio";
+		// fileName2 =
+		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.2.evio";
 		ArrayList<String> fileArray = new ArrayList<String>();
-		fileArray.add(fileName);
-		fileArray.add(fileName2);
+		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/elec/cookedFiles/out_out_1.evio");
+		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/elec/cookedFiles/out_out_10.evio");
+		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/elec/cookedFiles/out_out_2.evio");
+		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/elec/cookedFiles/out_out_3.evio");
+
+		fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_1.evio");
+		fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_10.evio");
+		fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_2.evio");
+		fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_4.evio");
+
+		// fileArray.add(fileName);
+		// fileArray.add(
+		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.3.evio");
+		// fileArray.add(
+		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.4.evio");
+		// fileArray.add(
+		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.5.evio");
 
 		TimeToDistanceFitter rd = new TimeToDistanceFitter(fileArray, true);
 
 		rd.processData();
-		rd.drawHistograms();
+		// rd.drawHistograms();
 
 	}
 
