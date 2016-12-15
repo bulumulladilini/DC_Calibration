@@ -7,12 +7,12 @@ package org.jlab.dc_calibration.domain;
 
 import static org.jlab.dc_calibration.domain.Constants.cos30;
 import static org.jlab.dc_calibration.domain.Constants.rad2deg;
-
-//kp: 8/15/16: Started from the copy of Will Phelp's code for doubleGaussianF1D class that he had written for me.
-import java.util.ArrayList;
 import static org.jlab.dc_calibration.domain.Constants.thEdgeVzH;
 import static org.jlab.dc_calibration.domain.Constants.thEdgeVzL;
 import static org.jlab.dc_calibration.domain.Constants.wpdist;
+
+//kp: 8/15/16: Started from the copy of Will Phelp's code for doubleGaussianF1D class that he had written for me.
+import java.util.ArrayList;
 
 import org.jlab.groot.math.Func1D;
 
@@ -24,7 +24,7 @@ import org.jlab.groot.math.Func1D;
 // public class calibFnToDraw_withGROOT extends F1D {
 public class calibFnToDraw_withGROOT extends Func1D {
 	int npx = 1000;
-        private int Sector;
+	private int Sector;
 	private int SL;
 	private int ThBin;
 	private boolean isLinearFit;
@@ -36,13 +36,13 @@ public class calibFnToDraw_withGROOT extends Func1D {
 	}
 
 	// public doubleGaussianF1D(String name, double xmin, double xmax){
-	//public calibFnToDraw_withGROOT(String name, double xmin, double xmax, boolean isLinearFit) {
+	// public calibFnToDraw_withGROOT(String name, double xmin, double xmax, boolean isLinearFit) {
 	public calibFnToDraw_withGROOT(String name, double xmin, double xmax, int Sector, int SL, int ThBin, boolean isLinearFit) {
 		super(name, xmin, xmax);
 		this.initParameters();
-                this.Sector = Sector;
-                this.SL = SL;
-                this.ThBin = ThBin;
+		this.Sector = Sector;
+		this.SL = SL;
+		this.ThBin = ThBin;
 		this.isLinearFit = isLinearFit;
 	}
 
@@ -51,20 +51,20 @@ public class calibFnToDraw_withGROOT extends Func1D {
 		pars.add("v0");
 		pars.add("deltamn");
 		pars.add("tmax");
-		//pars.add("tmax2");
+		// pars.add("tmax2");
 		pars.add("distbeta");
-		//pars.add("SL"); // This is not a fit-par //Values of SL are 1,2,3 ..,6
-		//pars.add("thetaDeg"); // This is not a fit-par
-		//pars.add("docaMax"); // This is not a fit-par //2*wpdist[SL-1]
+		// pars.add("SL"); // This is not a fit-par //Values of SL are 1,2,3 ..,6
+		// pars.add("thetaDeg"); // This is not a fit-par
+		// pars.add("docaMax"); // This is not a fit-par //2*wpdist[SL-1]
 		// docaMax comes from 2*wpdist[SL-1], but eventually I want to make it
 		// CCDB dependent
 		// by making the main program CCDB dependent and getting its value as
 		// input par.
 		// that's why I chose it as one of the input pars, although I could
 		// derive it from SL.
-		
-                //double prevFitPars[] = { 62.92e-04, 1.35, 137.67, 148.02, 0.055, 1.0, 0.0, 0.3861 };
-		double prevFitPars[] = { 62.92e-04, 1.35, 148.02, 0.055};
+
+		// double prevFitPars[] = { 62.92e-04, 1.35, 137.67, 148.02, 0.055, 1.0, 0.0, 0.3861 };
+		double prevFitPars[] = { 62.92e-04, 1.35, 148.02, 0.055 };
 
 		/*
 		 * this.setNParams(pars.size()); //Valid for old F1D (coatjava 2.4) for(int loop = 0; loop < pars.size(); loop++){
@@ -97,16 +97,15 @@ public class calibFnToDraw_withGROOT extends Func1D {
 	public double evaluate(double xNorm) {
 		double v0 = this.parameter(0).value();
 		double deltamn = this.parameter(1).value();
-		double tMax = this.parameter(2).value(); 
-		//double tmax2 = this.parameter(3).value();
-		double distbeta = this.parameter(3).value();//this.parameter(4).value();
-		//double fSL = this.parameter(5).value();// Values of SL are 1,2,3 ..,6
-		//double thetaDeg = this.parameter(6).value();
-                double thetaDeg = (thEdgeVzL[ThBin] + thEdgeVzH[ThBin]) / 2.0; //Center of theta bin
-		//double docaMax = this.parameter(7).value();
-		double docaMax = 2*wpdist[SL]; //int SL = (int) fSL;                
-		
-                
+		double tMax = this.parameter(2).value();
+		// double tmax2 = this.parameter(3).value();
+		double distbeta = this.parameter(3).value();// this.parameter(4).value();
+		// double fSL = this.parameter(5).value();// Values of SL are 1,2,3 ..,6
+		// double thetaDeg = this.parameter(6).value();
+		double thetaDeg = (thEdgeVzL[ThBin] + thEdgeVzH[ThBin]) / 2.0; // Center of theta bin
+		// double docaMax = this.parameter(7).value();
+		double docaMax = 2 * wpdist[SL]; // int SL = (int) fSL;
+
 		double Dc = docaMax * cos30; // docaMax = 2*wpdist[SL-1],
 
 		// double X=docaByDocaMax, x=X*dMax, Xhat0 = X/cos30;
@@ -118,7 +117,7 @@ public class calibFnToDraw_withGROOT extends Func1D {
 		// double distbeta = par[4]; //8/3/16: initial value given by Mac is
 		// 0.050 cm.
 		double v0Par = v0;
-                
+
 		// Assume a functional form (time = x/v0+a*(x/dmax)**n+b*(x/dmax)**m)
 		// for theta = 30 deg.
 		// First, calculate n
