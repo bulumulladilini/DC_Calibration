@@ -13,6 +13,7 @@
 package org.jlab.dc_calibration.domain;
 
 import static org.jlab.dc_calibration.domain.Constants.beta;
+import static org.jlab.dc_calibration.domain.Constants.deg2rad;
 import static org.jlab.dc_calibration.domain.Constants.rad2deg;
 import static org.jlab.dc_calibration.domain.Constants.wpdist;
 
@@ -31,14 +32,14 @@ public class DCTimeFunction {
 	}
 
 	public double linearFit() {
-		double dMax = 2 * wpdist[superlayer - 1];
+		double dMax = 2 * wpdist[superlayer];
 		double x = doca * dMax;
 		double v0Par = par[0];
 		return x / v0Par;
 	}
 
 	public double nonLinearFit() {
-		double dMax = 2 * wpdist[superlayer - 1];
+		double dMax = 2 * wpdist[superlayer];
 		// constant to avoid repeated calc. (see above main())
 		double x = doca * dMax;
 		double v0Par = par[0];
@@ -59,7 +60,9 @@ public class DCTimeFunction {
 		// determine a from the requirement that the derivative at
 		// d=dmax equal the derivative at d=0
 		double a = -b * mPar / nPar; // From one of the constraints
-		double alpha = thetaDeg; // = 0.0; //Local angle in degrees.
+
+		double alpha = isReducedAngle(thetaDeg); // = 0.0; //Local angle in degrees.
+		System.out.println("this is alpha " + alpha);
 		double cos30minusalpha = Math.cos((30. - alpha) / rad2deg); // =Math.cos(Math.toRadians(30.-alpha));
 		double xhat = x / dMax;
 		double dmaxalpha = dMax * cos30minusalpha;
@@ -83,6 +86,18 @@ public class DCTimeFunction {
 		calcTime = calcTime + deltatime_beta;
 
 		return calcTime;
+	}
+
+	private double isReducedAngle(double alpha) {
+		double ralpha;
+		ralpha = Math.abs(alpha * deg2rad);
+
+		while (ralpha > Math.PI / 3.0)
+			ralpha -= Math.PI / 3.0;
+		if (ralpha > Math.PI / 6.0)
+			ralpha = Math.PI / 3.0 - ralpha;
+
+		return ralpha * rad2deg;
 	}
 
 }

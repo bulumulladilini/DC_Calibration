@@ -10,7 +10,7 @@
  * (________(                @author m.c.kunkel
  *  `------'
 */
-package org.jlab.dc_calibration.domain;
+package org.jlab.dc_calibration.NTuple.client;
 
 import static org.jlab.dc_calibration.domain.Constants.parName;
 import static org.jlab.dc_calibration.domain.Constants.prevFitPars;
@@ -26,6 +26,8 @@ import org.freehep.math.minuit.MnMigrad;
 import org.freehep.math.minuit.MnStrategy;
 import org.freehep.math.minuit.MnUserParameters;
 import org.jlab.dc_calibration.NTuple.NTuple;
+import org.jlab.dc_calibration.domain.DCFitDrawer;
+import org.jlab.dc_calibration.domain.DCFitFunction;
 import org.jlab.groot.data.GraphErrors;
 import org.jlab.groot.data.H2F;
 import org.jlab.groot.graphics.EmbeddedCanvas;
@@ -34,8 +36,8 @@ public class ViewNTuple {
 	public static void main(String[] args) {
 		// NTuple("pionTestData", "Sector:SuperLayer:ThetaBin:Time:Doca");
 
-		NTuple elecTestData = new NTuple("pionTest", 6);
-		elecTestData.open("src/files/pionTest.evio");
+		NTuple elecTestData = new NTuple("pionTest", 5);
+		elecTestData.open("src/files/elecTest.evio");
 		elecTestData.scan();
 
 		H2F hElecDocaTime =
@@ -43,7 +45,7 @@ public class ViewNTuple {
 		GraphErrors elecTestgraph = hElecDocaTime.getProfileX();
 
 		final int nFreePars = 4;
-		DCFitFunction dcElecFcn = new DCFitFunction(elecTestgraph, 4, 1, true);
+		DCFitFunction dcElecFcn = new DCFitFunction(elecTestgraph, 4, 1, false);
 
 		MnUserParameters elecUpar = new MnUserParameters();
 		double parSteps[] = { 0.00001, 0.001, 0.01, 0.01, 0.0001 };
@@ -84,7 +86,7 @@ public class ViewNTuple {
 		for (int i = 0; i < nFreePars; i++) {
 			pars4FitLine[i] = fPars[i];
 		}
-		DCFitDrawer fitElecLine = new DCFitDrawer("Electrons", 0.0, 0.35, 4, 1, true);
+		DCFitDrawer fitElecLine = new DCFitDrawer("Electrons", 0.0, 0.35, 4, 1, false);
 
 		double[] pars4FitLineTmp = new double[nFreePars];
 		// for (int i = 0; i < nSectors; i++) {
