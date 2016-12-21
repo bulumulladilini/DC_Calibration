@@ -10,7 +10,7 @@
  * (________(                @author m.c.kunkel
  *  `------'				 @author KPAdhikari
 */
-package org.jlab.dc_calibration.domain;
+package org.jlab.dc_calibration;
 
 import static org.jlab.dc_calibration.domain.Constants.nHists;
 import static org.jlab.dc_calibration.domain.Constants.nLayer;
@@ -40,6 +40,10 @@ import org.freehep.math.minuit.MnMigrad;
 import org.freehep.math.minuit.MnStrategy;
 import org.freehep.math.minuit.MnUserParameters;
 import org.jlab.dc_calibration.NTuple.NTuple;
+import org.jlab.dc_calibration.domain.Coordinate;
+import org.jlab.dc_calibration.domain.DCFitFunction;
+import org.jlab.dc_calibration.domain.DCTabbedPane;
+import org.jlab.dc_calibration.domain.OrderOfAction;
 import org.jlab.groot.base.TStyle;
 import org.jlab.groot.data.GraphErrors;
 import org.jlab.groot.data.H1F;

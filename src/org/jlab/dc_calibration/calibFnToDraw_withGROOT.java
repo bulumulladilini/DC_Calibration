@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.jlab.dc_calibration.domain;
+package org.jlab.dc_calibration;
 
 import static org.jlab.dc_calibration.domain.Constants.cos30;
 import static org.jlab.dc_calibration.domain.Constants.rad2deg;

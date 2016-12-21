@@ -10,7 +10,7 @@
  * (________(                @author m.c.kunkel
  *  `------'
 */
-package org.jlab.dc_calibration.domain;
+package org.jlab.dc_calibration;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;

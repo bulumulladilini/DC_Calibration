@@ -10,7 +10,7 @@
  * (________(                @author m.c.kunkel
  *  `------'
 */
-package org.jlab.dc_calibration.domain;
+package org.jlab.dc_calibration.NTuple.client;
 
 import static org.jlab.dc_calibration.domain.Constants.parName;
 import static org.jlab.dc_calibration.domain.Constants.prevFitPars;
@@ -26,6 +26,8 @@ import org.freehep.math.minuit.MnMigrad;
 import org.freehep.math.minuit.MnStrategy;
 import org.freehep.math.minuit.MnUserParameters;
 import org.jlab.dc_calibration.NTuple.NTuple;
+import org.jlab.dc_calibration.domain.DCFitDrawer;
+import org.jlab.dc_calibration.domain.DCFitFunction;
 import org.jlab.groot.data.GraphErrors;
 import org.jlab.groot.data.H2F;
 import org.jlab.groot.graphics.EmbeddedCanvas;

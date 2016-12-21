@@ -2,7 +2,7 @@
  *
  * @author KPAdhikari
  */
-package org.jlab.dc_calibration.domain;
+package org.jlab.dc_calibration;
 
 import static org.jlab.dc_calibration.domain.Constants.beta;
 import static org.jlab.dc_calibration.domain.Constants.cos30;

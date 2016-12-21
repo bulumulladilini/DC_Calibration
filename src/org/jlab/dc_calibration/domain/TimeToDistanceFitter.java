@@ -54,6 +54,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private EvioDataBank bnkHits;
 	private EvioDataBank bnkSegs;
 	private EvioDataBank bnkSegTrks;
+	private EvioDataBank bnkTrks;
+	private int nTrks;
 
 	private Map<Coordinate, H1F> hArrWire = new HashMap<Coordinate, H1F>();
 	private Map<Coordinate, H1F> h1ThSL = new HashMap<Coordinate, H1F>();
@@ -350,17 +352,24 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		}
 		reader.open();
 		while (reader.hasEvent()) {// && icounter < 100
+
 			icounter++;
 			if (icounter % 2000 == 0) {
 				System.out.println("Processed " + icounter + " events.");
 			}
 			EvioDataEvent event = reader.getNextEvent();
-			if (event.hasBank("TimeBasedTrkg::TBSegmentTrajectory")) {
+			ProcessTBSegmentTrajectory tbSegmentTrajectory = new ProcessTBSegmentTrajectory(event);
+			if (tbSegmentTrajectory.getNsegs() > 0) {
 				counter++;
 			}
-			if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBSegments")) {// && event.hasBank("TimeBasedTrkg::TBSegmentTrajectory")
-				processTBhits(event);
-				processTBSegments(event);
+			if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBSegments")) {// && event.hasBank("TimeBasedTrkg::TBSegmentTrajectory") &&
+			                                                                                           // event.hasBank("TimeBasedTrkg::TBTracks")
+				ProcessTBTracks tbTracks = new ProcessTBTracks(event);
+				if (tbTracks.getNTrks() > 0) {
+					processTBhits(event);
+					processTBSegments(event);
+				}
+
 			}
 
 		}
@@ -485,17 +494,17 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 				sector6.cd(canvasPlace);
 
 				sector1.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j, k)));
-				sector1.draw(mapOfFitLines.get(new Coordinate(0, j, k)), "same");
+				// sector1.draw(mapOfFitLines.get(new Coordinate(0, j, k)), "same");
 				sector2.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j, k)));
-				sector2.draw(mapOfFitLines.get(new Coordinate(1, j, k)), "same");
+				// sector2.draw(mapOfFitLines.get(new Coordinate(1, j, k)), "same");
 				sector3.draw(h2timeVtrkDocaVZ.get(new Coordinate(2, j, k)));
-				sector3.draw(mapOfFitLines.get(new Coordinate(2, j, k)), "same");
+				// sector3.draw(mapOfFitLines.get(new Coordinate(2, j, k)), "same");
 				sector4.draw(h2timeVtrkDocaVZ.get(new Coordinate(3, j, k)));
-				sector4.draw(mapOfFitLines.get(new Coordinate(3, j, k)), "same");
+				// sector4.draw(mapOfFitLines.get(new Coordinate(3, j, k)), "same");
 				sector5.draw(h2timeVtrkDocaVZ.get(new Coordinate(4, j, k)));
-				sector5.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
+				// sector5.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
 				sector6.draw(h2timeVtrkDocaVZ.get(new Coordinate(5, j, k)));
-				sector6.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
+				// sector6.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
 
 				sector1Profiles.cd(canvasPlace);
 				sector2Profiles.cd(canvasPlace);
@@ -681,17 +690,22 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_2.evio");
 		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_4.evio");
 
+		fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_1.evio");
+		fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_10.evio");
+		fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_2.evio");
+		fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_4.evio");
+
 		// fileArray.add(fileName);
-		fileArray.add(
-		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio");
-		fileArray.add(
-		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.3.evio");
-
-		fileArray.add(
-		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.4.evio");
-
-		fileArray.add(
-		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.5.evio");
+		// fileArray.add(
+		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio");
+		// fileArray.add(
+		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.3.evio");
+		//
+		// fileArray.add(
+		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.4.evio");
+		//
+		// fileArray.add(
+		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.5.evio");
 
 		TimeToDistanceFitter rd = new TimeToDistanceFitter(fileArray, true);
 
