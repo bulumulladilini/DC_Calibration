@@ -413,7 +413,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 			gFitChisqProbTBSegments.put(bnkSegs.getInt("ID", j), bnkSegs.getDouble("fitChisqProb", j));
 
 			double thDeg = rad2deg * Math.atan2(bnkSegs.getDouble("fitSlope", j), 1.0);
-			h1ThSL.get(new Coordinate(bnkHits.getInt("superlayer", j) - 1)).fill(thDeg);
+			h1ThSL.get(new Coordinate(bnkSegs.getInt("superlayer", j) - 1)).fill(thDeg);
 			for (int h = 1; h <= 12; h++) {
 				if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1)
 					nHitsInSeg++;
