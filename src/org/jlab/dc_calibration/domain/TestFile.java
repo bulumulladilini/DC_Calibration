@@ -12,132 +12,138 @@
 */
 package org.jlab.dc_calibration.domain;
 
+import static org.jlab.dc_calibration.domain.Constants.nHists;
+import static org.jlab.dc_calibration.domain.Constants.nLayer;
 import static org.jlab.dc_calibration.domain.Constants.nSL;
+import static org.jlab.dc_calibration.domain.Constants.nSectors;
+import static org.jlab.dc_calibration.domain.Constants.nThBinsVz;
+import static org.jlab.dc_calibration.domain.Histograms.h2timeVtrkDocaVZ;
+//import static org.jlab.dc_calibration.domain.Histograms.*;
+//import static org.jlab.dc_calibration.domain.Constants.*;
+import static org.jlab.dc_calibration.domain.Histograms.hArrWire;
+import static org.jlab.dc_calibration.domain.Histograms.htrkDoca;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.jlab.groot.base.TStyle;
-import org.jlab.groot.data.H1F;
 import org.jlab.groot.graphics.EmbeddedCanvas;
-import org.jlab.io.evio.EvioDataBank;
 import org.jlab.io.evio.EvioDataChain;
 import org.jlab.io.evio.EvioDataEvent;
 
 public class TestFile {
 
-	protected static Map<Coordinate, H1F> hArrWire = new HashMap<Coordinate, H1F>();
-	private EmbeddedCanvas test;
-	private EvioDataBank bnkHits;
-
+	private ArrayList<EmbeddedCanvas> wires;
+	private ArrayList<EmbeddedCanvas> trkDocas;
+	private ArrayList<EmbeddedCanvas> trkDocasvsTime;
 	private ArrayList<String> fileArray;
+
 	private EvioDataChain reader;
-	protected Map<Integer, Integer> layerMapTBHits;
-	protected Map<Integer, Integer> wireMapTBHits;
-	protected Map<Integer, Double> timeMapTBHits;
-	protected Map<Integer, Double> trkDocaMapTBHits;
+	private InitializeHistograms initializeHistograms = new InitializeHistograms();
 
 	public TestFile(ArrayList<String> files) {
 		this.fileArray = files;
 		this.reader = new EvioDataChain();
-		createHists();
-	}
-
-	private void createHists() {
-		TStyle.createAttributes();
-		String hNm = "";
-		String hTtl = "";
-		for (int i = 0; i < nSL; i++) {
-			hNm = String.format("wireS%d", i + 1);
-			hArrWire.put(new Coordinate(i), new H1F(hNm, 120, -1.0, 119.0));
-			hTtl = String.format("wire (SL=%d)", i + 1);
-			hArrWire.get(new Coordinate(i)).setTitleX(hTtl);
-			hArrWire.get(new Coordinate(i)).setLineColor(i + 1);
-		}
+		addToReader();
+		initializeHistograms.initTBhists();
+		initializeHistograms.initTBSegments();
 	}
 
 	private void createCanvas() {
-		test = new EmbeddedCanvas();
-		test.setSize(4 * 400, 6 * 400);
-		test.divide(2, 3);
+		wires = new ArrayList<EmbeddedCanvas>();
+		trkDocas = new ArrayList<EmbeddedCanvas>();
+		trkDocasvsTime = new ArrayList<EmbeddedCanvas>();
+
+		for (int i = 0; i < nSectors; i++) {
+			wires.add(new EmbeddedCanvas());
+			wires.get(i).setSize(4 * 400, 6 * 400);
+			wires.get(i).divide(6, 6);
+			trkDocas.add(new EmbeddedCanvas());
+			trkDocas.get(i).setSize(4 * 400, 6 * 400);
+			trkDocas.get(i).divide(3, 2);
+			trkDocasvsTime.add(new EmbeddedCanvas());
+			trkDocasvsTime.get(i).setSize(4 * 400, 6 * 400);
+			trkDocasvsTime.get(i).divide(6, 6);
+		}
+	}
+
+	private void addToReader() {
+
+		try {
+			for (String str : fileArray) {
+				this.reader.addFile(str);
+			}
+			this.reader.open();
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
 	}
 
 	protected void processData() {
-		int counter = 0;
 		int icounter = 0;
-		for (String str : fileArray) {
-			reader.addFile(str);
-		}
-		reader.open();
 		while (reader.hasEvent()) {// && icounter < 100
-
 			icounter++;
-			if (icounter % 2000 == 0) {
+			if (icounter % 200 == 0) {
 				System.out.println("Processed " + icounter + " events.");
 			}
 			EvioDataEvent event = reader.getNextEvent();
 			ProcessTBHits tbHits = new ProcessTBHits(event);
 			ProcessTBTracks tbTracks = new ProcessTBTracks(event);
-
-			if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBSegments")) {// && event.hasBank("TimeBasedTrkg::TBSegmentTrajectory") &&
-
-				if (tbTracks.getNTrks() > 0) {
-					tbHits.processTBhits();
-					// processTBhits(event);
-				}
-			}
-		}
-		System.out.println(
-		        "processed " + counter + " Events with TimeBasedTrkg::TBSegmentTrajectory entries from a total of " + icounter + " events");
-	}
-
-	private void processTBhits(EvioDataEvent event) {
-		layerMapTBHits = new HashMap<Integer, Integer>();
-		wireMapTBHits = new HashMap<Integer, Integer>();
-		timeMapTBHits = new HashMap<Integer, Double>();
-		trkDocaMapTBHits = new HashMap<Integer, Double>();
-
-		bnkHits = (EvioDataBank) event.getBank("TimeBasedTrkg::TBHits");
-		for (int j = 0; j < bnkHits.rows(); j++) {
-			layerMapTBHits.put(bnkHits.getInt("id", j), bnkHits.getInt("layer", j));
-			wireMapTBHits.put(bnkHits.getInt("id", j), bnkHits.getInt("wire", j));
-			timeMapTBHits.put(bnkHits.getInt("id", j), bnkHits.getDouble("time", j));
-			trkDocaMapTBHits.put(bnkHits.getInt("id", j), bnkHits.getDouble("trkDoca", j));
-			int docaBin = (int) ((bnkHits.getDouble("trkDoca", j) - (-0.8)) / 0.2);
-			if (docaBin > -1 && docaBin < 8) {
-				hArrWire.get(new Coordinate(bnkHits.getInt("superlayer", j) - 1)).fill((float) bnkHits.getInt("wire", j));
+			ProcessTBSegments tbSegments = new ProcessTBSegments(event);
+			if (tbTracks.getNTrks() > 0) {// && tbHits.getNrows() > 0 && tbSegments.getNrows() > 0
+				tbHits.processTBhits();
+				tbSegments.processTBSegments(tbHits);
+				tbHits.clearMaps();
+				tbSegments.clearMaps();
 			}
 		}
 	}
 
 	protected void drawHistograms() {
 		createCanvas();
-
-		int canvasPlace = 0;
+		int canvasPlace;
 		for (int i = 0; i < nSL; i++) {
-
-			test.cd(canvasPlace);
-			test.draw(hArrWire.get(new Coordinate(i)));
-			System.out.println("onn canvas " + canvasPlace);
-			canvasPlace++;
-
+			canvasPlace = 0;
+			for (int j = 0; j < nLayer; j++) {
+				for (int k = 0; k < nHists; k++) {
+					wires.get(i).cd(canvasPlace);
+					wires.get(i).draw(hArrWire.get(new Coordinate(i, j, k)));
+					canvasPlace++;
+				}
+			}
+			wires.get(i).save("src/images/wires" + (i + 1) + ".png");
+		}
+		for (int i = 0; i < nSectors; i++) {
+			canvasPlace = 0;
+			for (int j = 0; j < nSL; j++) {
+				trkDocas.get(i).cd(canvasPlace);
+				trkDocas.get(i).draw(htrkDoca.get(new Coordinate(i, j)));
+				canvasPlace++;
+			}
+			trkDocas.get(i).save("src/images/trkDocas" + (i + 1) + ".png");
 		}
 
-		test.save("src/images/test.png");
-
+		for (int i = 0; i < nSectors; i++) {
+			canvasPlace = 0;
+			for (int j = 0; j < nSL; j++) {
+				for (int k = 0; k < nThBinsVz; k++) {
+					trkDocasvsTime.get(i).cd(canvasPlace);
+					trkDocasvsTime.get(i).draw(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)));
+					canvasPlace++;
+				}
+			}
+			trkDocasvsTime.get(i).save("src/images/timeVtrkDocaSector" + (i + 1) + ".png");
+		}
 	}
 
 	public static void main(String[] args) {
 
 		ArrayList<String> fileArray = new ArrayList<String>();
 
-		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_1.evio");
-		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_10.evio");
+		fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_1.evio");
+		fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_10.evio");
 		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_2.evio");
 		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_4.evio");
 
-		fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_1.evio");
+		// fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_1.evio");
 		// fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_10.evio");
 		// fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_2.evio");
 		// fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_4.evio");
