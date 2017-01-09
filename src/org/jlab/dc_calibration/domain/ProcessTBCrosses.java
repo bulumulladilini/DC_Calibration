@@ -15,36 +15,37 @@ package org.jlab.dc_calibration.domain;
 import org.jlab.io.evio.EvioDataBank;
 import org.jlab.io.evio.EvioDataEvent;
 
-public class ProcessTBSegmentTrajectory extends DCTBValid {
-	private EvioDataEvent event;
-	private EvioDataBank bnkSegs;
-	private int nSegs;
+public class ProcessTBCrosses extends DCTBValid {
 
-	public ProcessTBSegmentTrajectory(EvioDataEvent event) {
+	private EvioDataBank bnkCrs;
+	private EvioDataEvent event;
+	private int nCrs;
+
+	public ProcessTBCrosses(EvioDataEvent event) {
 		this.event = event;
 		init();
 	}
 
-	public int getNsegs() {
-		return nSegs;
+	public int getNCrs() {
+		return nCrs;
 	}
 
 	private void init() {
 		if (this.isValid()) {
-			this.bnkSegs = (EvioDataBank) event.getBank("TimeBasedTrkg::TBSegmentsTrajectory");
-			setNTrks();
+			this.bnkCrs = (EvioDataBank) event.getBank("TimeBasedTrkg::TBCrosses");
+			setNtrks();
 		} else
-			this.nSegs = 0;
+			this.nCrs = 0;
 	}
 
-	private void setNTrks() {
-		this.nSegs = bnkSegs.rows();
+	private void setNtrks() {
+		this.nCrs = bnkCrs.rows();
 
 	}
 
 	@Override
 	protected boolean isValid() {
-		return event.hasBank("TimeBasedTrkg::TBSegmentsTrajectory") ? true : false;
-
+		return event.hasBank("TimeBasedTrkg::TBCrosses") ? true : false;
 	}
+
 }

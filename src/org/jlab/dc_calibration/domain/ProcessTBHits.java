@@ -20,7 +20,7 @@ import java.util.HashMap;
 import org.jlab.io.evio.EvioDataBank;
 import org.jlab.io.evio.EvioDataEvent;
 
-public class ProcessTBHits {
+public class ProcessTBHits extends DCTBValid {
 
 	private EvioDataBank bnkHits;
 	private EvioDataEvent event;
@@ -38,7 +38,7 @@ public class ProcessTBHits {
 	}
 
 	private void init() {
-		if (event.hasBank("TimeBasedTrkg::TBHits")) {
+		if (this.isValid()) {
 			this.bnkHits = (EvioDataBank) event.getBank("TimeBasedTrkg::TBHits");
 			initMaps();
 			setNrows();
@@ -101,6 +101,12 @@ public class ProcessTBHits {
 			htrkDoca.get(new Coordinate(bnkHits.getInt("sector", j) - 1, bnkHits.getInt("superlayer", j) - 1))
 			        .fill(bnkHits.getDouble("trkDoca", j));
 		}
+	}
+
+	@Override
+	protected boolean isValid() {
+		return event.hasBank("TimeBasedTrkg::TBHits") ? true : false;
+
 	}
 
 }

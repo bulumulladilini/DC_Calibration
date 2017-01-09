@@ -15,13 +15,14 @@ package org.jlab.dc_calibration.domain;
 import org.jlab.io.evio.EvioDataBank;
 import org.jlab.io.evio.EvioDataEvent;
 
-public class ProcessTBTracks {
+public class ProcessTBTracks extends DCTBValid implements iProcessable {
 
 	private EvioDataBank bnkTrks;
+	private EvioDataEvent event;
 	private int nTrks;
 
 	public ProcessTBTracks(EvioDataEvent event) {
-		this.bnkTrks = (EvioDataBank) event.getBank("TimeBasedTrkg::TBTracks");
+		this.event = event;
 		init();
 	}
 
@@ -30,14 +31,26 @@ public class ProcessTBTracks {
 	}
 
 	private void init() {
-		if (bnkTrks != null)
+		if (this.isValid()) {
+			this.bnkTrks = (EvioDataBank) event.getBank("TimeBasedTrkg::TBTracks");
 			setNtrks();
-		else
+		} else
 			this.nTrks = 0;
 	}
 
 	private void setNtrks() {
 		this.nTrks = bnkTrks.rows();
+
+	}
+
+	@Override
+	protected boolean isValid() {
+		return event.hasBank("TimeBasedTrkg::TBTracks") ? true : false;
+	}
+
+	@Override
+	public void processEvent(EvioDataEvent event) {
+		// TODO Auto-generated method stub
 
 	}
 
