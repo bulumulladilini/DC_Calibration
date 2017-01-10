@@ -29,7 +29,7 @@ import java.util.Map;
 import org.jlab.io.evio.EvioDataBank;
 import org.jlab.io.evio.EvioDataEvent;
 
-public class ProcessTBSegments {
+public class ProcessTBSegments extends DCTBValid {
 
 	private EvioDataBank bnkSegs;
 	private int nRows;
@@ -49,11 +49,10 @@ public class ProcessTBSegments {
 	}
 
 	private void init() {
-		if (event.hasBank("TimeBasedTrkg::TBSegments")) {
+		if (this.isValid()) {
 			this.bnkSegs = (EvioDataBank) event.getBank("TimeBasedTrkg::TBSegments");
 			initMaps();
 			setNrows();
-
 		} else
 			this.nRows = 0;
 	}
@@ -94,13 +93,12 @@ public class ProcessTBSegments {
 		return nRows;
 	}
 
-	protected void processTBSegments(ProcessTBHits tbHits) {
-		this.timeMapTBHits = tbHits.getTimeMapTBHits();
-		this.trkDocaMapTBHits = tbHits.getTrkDocaMapTBHits();
+	public void processEvent() {
 		gSegmThBinMapTBSegments = new HashMap<Integer, Integer>();
 		gSegmAvgWireTBSegments = new HashMap<Integer, Double>();
 		gFitChisqProbTBSegments = new HashMap<Integer, Double>();
 		bnkSegs = (EvioDataBank) event.getBank("TimeBasedTrkg::TBSegments");
+
 		int nHitsInSeg = 0;
 		for (int j = 0; j < this.nRows; j++) {
 			int superlayer = bnkSegs.getInt("superlayer", j);
@@ -145,7 +143,18 @@ public class ProcessTBSegments {
 
 	}
 
+	protected void processTBSegments(ProcessTBHits tbHits) {
+		this.timeMapTBHits = tbHits.getTimeMapTBHits();
+		this.trkDocaMapTBHits = tbHits.getTrkDocaMapTBHits();
+		processEvent();
+	}
+
 	protected void processTBSegments() {
 		processTBSegments(this.tbHits);
+	}
+
+	@Override
+	protected boolean isValid() {
+		return event.hasBank("TimeBasedTrkg::TBSegments") ? true : false;
 	}
 }

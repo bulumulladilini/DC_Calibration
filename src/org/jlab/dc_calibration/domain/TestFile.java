@@ -47,8 +47,8 @@ public class TestFile implements ActionListener, Runnable {
 
 	private ArrayList<EmbeddedCanvas> wires;
 	private ArrayList<EmbeddedCanvas> trkDocas;
-	private ArrayList<EmbeddedCanvas> trkDocasvsTime;
-	private ArrayList<EmbeddedCanvas> trkDocasvsTimeProfiles;
+	private Map<Coordinate, EmbeddedCanvas> trkDocasvsTime;
+	private Map<Coordinate, EmbeddedCanvas> trkDocasvsTimeProfiles;
 
 	private ArrayList<String> fileArray;
 
@@ -61,6 +61,7 @@ public class TestFile implements ActionListener, Runnable {
 	private ProcessTBHits tbHits;
 	private ProcessTBTracks tbTracks;
 	private ProcessTBSegments tbSegments;
+	private ProcessTBCrosses tbCrs;
 
 	private boolean acceptorder = false;
 	private boolean isLinearFit;
@@ -97,7 +98,6 @@ public class TestFile implements ActionListener, Runnable {
 		initializeHistograms.initTBSegments();
 		initMaps();
 		this.dcTabbedPane = new DCTabbedPane("PooperDooper");
-
 	}
 
 	private void initMaps() {
@@ -112,8 +112,8 @@ public class TestFile implements ActionListener, Runnable {
 	private void createCanvas() {
 		wires = new ArrayList<EmbeddedCanvas>();
 		trkDocas = new ArrayList<EmbeddedCanvas>();
-		trkDocasvsTime = new ArrayList<EmbeddedCanvas>();
-		trkDocasvsTimeProfiles = new ArrayList<EmbeddedCanvas>();
+		trkDocasvsTime = new HashMap<Coordinate, EmbeddedCanvas>();
+		trkDocasvsTimeProfiles = new HashMap<Coordinate, EmbeddedCanvas>();
 		for (int i = 0; i < nSectors; i++) {
 			wires.add(new EmbeddedCanvas());
 			wires.get(i).setSize(4 * 400, 6 * 400);
@@ -121,12 +121,14 @@ public class TestFile implements ActionListener, Runnable {
 			trkDocas.add(new EmbeddedCanvas());
 			trkDocas.get(i).setSize(4 * 400, 6 * 400);
 			trkDocas.get(i).divide(3, 2);
-			trkDocasvsTime.add(new EmbeddedCanvas());
-			trkDocasvsTime.get(i).setSize(4 * 400, 6 * 400);
-			trkDocasvsTime.get(i).divide(6, 6);
-			trkDocasvsTimeProfiles.add(new EmbeddedCanvas());
-			trkDocasvsTimeProfiles.get(i).setSize(4 * 400, 6 * 400);
-			trkDocasvsTimeProfiles.get(i).divide(6, 6);
+			for (int j = 0; j < nSL; j++) {
+				trkDocasvsTime.put(new Coordinate(i, j), new EmbeddedCanvas());
+				trkDocasvsTime.get(new Coordinate(i, j)).setSize(4 * 400, 6 * 400);
+				trkDocasvsTime.get(new Coordinate(i, j)).divide(2, 6);
+				trkDocasvsTimeProfiles.put(new Coordinate(i, j), new EmbeddedCanvas());
+				trkDocasvsTimeProfiles.get(new Coordinate(i, j)).setSize(4 * 400, 6 * 400);
+				trkDocasvsTimeProfiles.get(new Coordinate(i, j)).divide(2, 6);
+			}
 		}
 	}
 
@@ -139,6 +141,34 @@ public class TestFile implements ActionListener, Runnable {
 
 	}
 
+	private void createFitLines() {
+		for (int i = 0; i < nSectors; i++) {
+			for (int j = 0; j < nSL; j++) {
+				for (int k = 0; k < nThBinsVz; k++) {
+					String title = "Sector " + i + " timeVtrkDocaS " + j + " Th" + k;
+					mapOfFitLines.put(new Coordinate(i, j, k), new DCFitDrawer(title, 0.0, 1.0, j, k, isLinearFit));
+					mapOfFitLines.get(new Coordinate(i, j, k)).setLineColor(2);
+					mapOfFitLines.get(new Coordinate(i, j, k)).setLineWidth(3);
+					mapOfFitLines.get(new Coordinate(i, j, k)).setLineStyle(4);
+					mapOfFitLines.get(new Coordinate(i, j, k)).setParameters(mapOfUserFitParameters.get(new Coordinate(i, j, k)));
+				}
+			}
+		}
+
+	}
+
+	private boolean isValid(EvioDataEvent event) {
+		DCTBValid HtsVal = new ProcessTBHits(event);
+		DCTBValid TrksVal = new ProcessTBTracks(event);
+		DCTBValid SegsVal = new ProcessTBSegments(event);
+		DCTBValid CrsVal = new ProcessTBCrosses(event);
+		this.tbHits = new ProcessTBHits(event);
+		this.tbTracks = new ProcessTBTracks(event);
+		this.tbSegments = new ProcessTBSegments(event);
+		this.tbCrs = new ProcessTBCrosses(event);
+		return (HtsVal.isValid() && TrksVal.isValid() && SegsVal.isValid() && CrsVal.isValid()) ? true : false;
+	}
+
 	protected void processData() {
 		int icounter = 0;
 		while (reader.hasEvent()) {// && icounter < 100
@@ -147,10 +177,8 @@ public class TestFile implements ActionListener, Runnable {
 				System.out.println("Processed " + icounter + " events.");
 			}
 			EvioDataEvent event = reader.getNextEvent();
-			this.tbHits = new ProcessTBHits(event);
-			this.tbTracks = new ProcessTBTracks(event);
-			this.tbSegments = new ProcessTBSegments(event);
-			if (tbTracks.getNTrks() > 0) {
+			if (this.isValid(event)) {// tbTracks.getNTrks() > 0 &&
+				// System.out.println(tbCrs.getNCrs() + " " + tbTracks.getNTrks() + " " + tbHits.getNrows() + " " + tbSegments.getNrows());
 				tbHits.processTBhits();
 				tbSegments.processTBSegments(tbHits);
 				tbHits.clearMaps();
@@ -197,25 +225,30 @@ public class TestFile implements ActionListener, Runnable {
 		// lets create lines we just fit
 		createFitLines();
 		for (int i = 0; i < nSectors; i++) {
-			canvasPlace = 0;
 			for (int j = 0; j < nSL; j++) {
 				for (int k = 0; k < nThBinsVz; k++) {
-					trkDocasvsTime.get(i).cd(canvasPlace);
-					trkDocasvsTime.get(i).draw(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)));
-					trkDocasvsTime.get(i).draw(mapOfFitLines.get(new Coordinate(i, j, k)), "same");
+					trkDocasvsTime.get(new Coordinate(i, j)).cd(k);
+					trkDocasvsTime.get(new Coordinate(i, j)).draw(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)));
+					// trkDocasvsTime.get(new Coordinate(i, j)).draw(mapOfFitLines.get(new Coordinate(i, j, k)), "same");
 
-					trkDocasvsTimeProfiles.get(i).cd(canvasPlace);
-					trkDocasvsTimeProfiles.get(i).draw(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX());
-					trkDocasvsTimeProfiles.get(i).draw(mapOfFitLines.get(new Coordinate(i, j, k)), "same");
-					canvasPlace++;
+					trkDocasvsTimeProfiles.get(new Coordinate(i, j)).cd(k);
+					trkDocasvsTimeProfiles.get(new Coordinate(i, j)).draw(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX());
+					// trkDocasvsTimeProfiles.get(new Coordinate(i, j)).draw(mapOfFitLines.get(new Coordinate(i, j, k)), "same");
 				}
+
+				trkDocasvsTime.get(new Coordinate(i, j)).save("src/images/timeVtrkDocaSector" + (i + 1) + "SuperLayer" + (j + 1) + ".png");
+				addToPane("timeVtrkDocaSector" + (i + 1) + "SuperLayer" + (j + 1), trkDocasvsTime.get(new Coordinate(i, j)));
+				trkDocasvsTimeProfiles.get(new Coordinate(i, j))
+				        .save("src/images/timeVtrkDocaProfilesSector" + (i + 1) + "SuperLayer" + (j + 1) + ".png");
+				addToPane("timeVtrkDocaProfilesSector" + (i + 1) + "SuperLayer" + (j + 1),
+				        trkDocasvsTimeProfiles.get(new Coordinate(i, j)));
 			}
-			trkDocasvsTime.get(i).save("src/images/timeVtrkDocaSector" + (i + 1) + ".png");
-			addToPane("timeVtrkDocaSector" + (i + 1), trkDocasvsTime.get(i));
-			trkDocasvsTimeProfiles.get(i).save("src/images/timeVtrkDocaProfilesSector" + (i + 1) + ".png");
-			addToPane("timeVtrkDocaProfilesSector" + (i + 1), trkDocasvsTimeProfiles.get(i));
 		}
 		showFrame();
+	}
+
+	protected void addToPane(String tabName, EmbeddedCanvas can) {
+		dcTabbedPane.addCanvasToPane(tabName, can);
 	}
 
 	public void runFitter() {
@@ -223,13 +256,11 @@ public class TestFile implements ActionListener, Runnable {
 		// initial guess of tMax for the 6 superlayers (cell sizes are different for each)
 		// This is one of the free parameters (par[2], but fixed for now.)
 		double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 };
-
 		// Now start minimization
 		double parSteps[] = { 0.00001, 0.001, 0.01, 0.01, 0.0001 };
 		double pLow[] = { prevFitPars[0] * 0.4, prevFitPars[1] * 0.0, prevFitPars[2] * 0.4, prevFitPars[3] * 0.4, prevFitPars[4] * 0.0 };
 		double pHigh[] = { prevFitPars[0] * 1.6, prevFitPars[1] * 5.0, prevFitPars[2] * 1.6, prevFitPars[3] * 1.6, prevFitPars[4] * 1.6 };
 		Map<Coordinate, MnUserParameters> mapTmpUserFitParameters = new HashMap<Coordinate, MnUserParameters>();
-
 		for (int i = 0; i < nSectors; i++) {
 			for (int j = 0; j < nSL; j++) {
 				for (int k = 0; k < nThBinsVz; k++) {
@@ -265,26 +296,6 @@ public class TestFile implements ActionListener, Runnable {
 
 	}
 
-	private void createFitLines() {
-		for (int i = 0; i < nSectors; i++) {
-			for (int j = 0; j < nSL; j++) {
-				for (int k = 0; k < nThBinsVz; k++) {
-					String title = "Sector " + i + " timeVtrkDocaS " + j + " Th" + k;
-					mapOfFitLines.put(new Coordinate(i, j, k), new DCFitDrawer(title, 0.0, 1.0, j, k, isLinearFit));
-					mapOfFitLines.get(new Coordinate(i, j, k)).setLineColor(2);
-					mapOfFitLines.get(new Coordinate(i, j, k)).setLineWidth(3);
-					mapOfFitLines.get(new Coordinate(i, j, k)).setLineStyle(4);
-					mapOfFitLines.get(new Coordinate(i, j, k)).setParameters(mapOfUserFitParameters.get(new Coordinate(i, j, k)));
-				}
-			}
-		}
-
-	}
-
-	protected void addToPane(String tabName, EmbeddedCanvas can) {
-		dcTabbedPane.addCanvasToPane(tabName, can);
-	}
-
 	public void showFrame() {
 		dcTabbedPane.showFrame();
 	}
@@ -304,22 +315,20 @@ public class TestFile implements ActionListener, Runnable {
 
 	@Override
 	public void run() {
-
 		processData();
 		drawHistograms();
-
 	}
 
 	public static void main(String[] args) {
 
 		ArrayList<String> fileArray = new ArrayList<String>();
 
-		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_1.evio");
+		fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_1.evio");
 		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_10.evio");
 		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_2.evio");
 		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_4.evio");
 
-		fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_1.evio");
+		// fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_1.evio");
 		// fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_10.evio");
 		// fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_2.evio");
 		// fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_4.evio");
