@@ -23,6 +23,7 @@ public class DCTimeFunction {
 	private double thetaDeg;
 	private double doca;
 	private double[] par;
+        private double bfield;
 
 	public DCTimeFunction(int superlayer, double thetaDeg, double doca, double[] par) {
 		this.superlayer = superlayer;
@@ -31,6 +32,14 @@ public class DCTimeFunction {
 		this.par = par;
 	}
 
+	public DCTimeFunction(int superlayer, double thetaDeg, double doca, double bfield, double[] par) {
+		this.superlayer = superlayer;
+		this.thetaDeg = thetaDeg;
+		this.doca = doca;
+		this.par = par;                
+		this.bfield = bfield; 
+	}  
+        
 	public double linearFit() {
 		double dMax = 2 * wpdist[superlayer];
 		double x = doca * dMax;
@@ -46,6 +55,13 @@ public class DCTimeFunction {
 		double deltanm = par[1];
 		double tMax = par[2];
 		double distbeta = par[3]; // 8/3/16: initial value given by Mac is 0.050 cm.
+                //Now the B-field parameters (applicable only to SL=3 & 4 i.e region-2)
+                double delta_bfield_coefficient = par[4];
+                double b1 = par[5];
+                double b2 = par[6];
+                double b3 = par[7];
+                double b4 = par[8];
+                
 		// Assume a functional form (time =
 		// First, calculate n
 		double nPar = (1.0 + (deltanm - 1.0) * Math.pow(0.615, deltanm)) / (1.0 - Math.pow(0.615, deltanm));
@@ -66,7 +82,8 @@ public class DCTimeFunction {
 		double cos30minusalpha = Math.cos((30. - alpha) / rad2deg); // =Math.cos(Math.toRadians(30.-alpha));
 		double xhat = x / dMax;
 		double dmaxalpha = dMax * cos30minusalpha;
-
+                double xhatalpha = x/dmaxalpha;
+                
 		// now calculate the dist to time function for theta = 'alpha' deg.
 		// Assume a functional form with the SAME POWERS N and M and
 		// coefficient a but a new coefficient 'balpha' to replace b.
@@ -81,6 +98,19 @@ public class DCTimeFunction {
 		double term1 = x / v0Par, term2 = a * xhatPowN, term3 = balpha * xhatPowM;
 		double calcTime = term1 + term2 + term3;
 
+                //     and here's a parameterization of the change in time due to a non-zero
+                //     bfield for where xhat=x/dmaxalpha where dmaxalpha is the 'dmax' for
+                //           a track with local angle alpha (for local angle = alpha)
+                double deltatime_bfield = 0.0;
+                if (superlayer == 3 || superlayer == 4) {
+                    deltatime_bfield = delta_bfield_coefficient * Math.pow(bfield, 2) * tMax *
+                            ( b1 * xhatalpha
+                            + b2 * Math.pow(xhatalpha, 2)
+                            + b3 * Math.pow(xhatalpha, 3)
+                            + b4 * Math.pow(xhatalpha, 4));
+                }
+                
+                
 		// //where x is trkdoca
 		double deltatime_beta = (Math.sqrt(x * x + Math.pow(distbeta * Math.pow(beta, 2), 2)) - x) / v0Par;
 		calcTime = calcTime + deltatime_beta;

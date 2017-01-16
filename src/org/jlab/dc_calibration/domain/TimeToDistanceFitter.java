@@ -121,7 +121,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		this.dcTabbedPane = new DCTabbedPane("PooperDooper");
 		this.isLinearFit = isLinearFit;
 		this.nTupletimeVtrkDocaVZ = new NTuple("testData", "Sector:SuperLayer:ThetaBin:Doca:Time");
-		this.tupleVars = new double[5];
+		this.tupleVars = new double[5]; 
 		createHists();
 	}
 
@@ -130,6 +130,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		this.OAInstance = OAInstance;
 		this.reader = new EvioDataChain();
 		this.dcTabbedPane = new DCTabbedPane("PooperDooper");
+                this.nTupletimeVtrkDocaVZ = new NTuple("testData", "Sector:SuperLayer:ThetaBin:Doca:Time");
+		this.tupleVars = new double[5]; 
 		this.isLinearFit = isLinearFit;
 		createHists();
 	}
@@ -316,31 +318,31 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		sector5Profiles = new EmbeddedCanvas();
 		sector6Profiles = new EmbeddedCanvas();
 
-		sector1.setSize(4 * 400, 6 * 400);
-		sector1.divide(6, 6);
-		sector2.setSize(4 * 400, 6 * 400);
-		sector2.divide(6, 6);
-		sector3.setSize(4 * 400, 6 * 400);
-		sector3.divide(6, 6);
-		sector4.setSize(4 * 400, 6 * 400);
-		sector4.divide(6, 6);
-		sector5.setSize(4 * 400, 6 * 400);
-		sector5.divide(6, 6);
-		sector6.setSize(4 * 400, 6 * 400);
-		sector6.divide(6, 6);
+		sector1.setSize(nThBinsVz* 400, nSL * 400);
+		sector1.divide(nThBinsVz, nSL);
+		sector2.setSize(nThBinsVz* 400, nSL * 400);
+		sector2.divide(nThBinsVz, nSL);
+		sector3.setSize(nThBinsVz* 400, nSL * 400);
+		sector3.divide(nThBinsVz, nSL);
+		sector4.setSize(nThBinsVz* 400, nSL * 400);
+		sector4.divide(nThBinsVz, nSL);
+		sector5.setSize(nThBinsVz* 400, nSL * 400);
+		sector5.divide(nThBinsVz, nSL);
+		sector6.setSize(nThBinsVz* 400, nSL * 400);
+		sector6.divide(nThBinsVz, nSL);
 
-		sector1Profiles.setSize(4 * 400, 6 * 400);
-		sector1Profiles.divide(6, 6);
-		sector2Profiles.setSize(4 * 400, 6 * 400);
-		sector2Profiles.divide(6, 6);
-		sector3Profiles.setSize(4 * 400, 6 * 400);
-		sector3Profiles.divide(6, 6);
-		sector4Profiles.setSize(4 * 400, 6 * 400);
-		sector4Profiles.divide(6, 6);
-		sector5Profiles.setSize(4 * 400, 6 * 400);
-		sector5Profiles.divide(6, 6);
-		sector6Profiles.setSize(4 * 400, 6 * 400);
-		sector6Profiles.divide(6, 6);
+		sector1Profiles.setSize(nThBinsVz* 400, nSL * 400);
+		sector1Profiles.divide(nThBinsVz, nSL);
+		sector2Profiles.setSize(nThBinsVz* 400, nSL * 400);
+		sector2Profiles.divide(nThBinsVz, nSL);
+		sector3Profiles.setSize(nThBinsVz* 400, nSL * 400);
+		sector3Profiles.divide(nThBinsVz, nSL);
+		sector4Profiles.setSize(nThBinsVz* 400, nSL * 400);
+		sector4Profiles.divide(nThBinsVz, nSL);
+		sector5Profiles.setSize(nThBinsVz* 400, nSL * 400);
+		sector5Profiles.divide(nThBinsVz, nSL);
+		sector6Profiles.setSize(nThBinsVz* 400, nSL * 400);
+		sector6Profiles.divide(nThBinsVz, nSL);
 
 	}
 
