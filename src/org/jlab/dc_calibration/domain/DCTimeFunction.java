@@ -56,11 +56,11 @@ public class DCTimeFunction {
 		double tMax = par[2];
 		double distbeta = par[3]; // 8/3/16: initial value given by Mac is 0.050 cm.
                 //Now the B-field parameters (applicable only to SL=3 & 4 i.e region-2)
-                double delta_bfield_coefficient = par[4];
-                double b1 = par[5];
-                double b2 = par[6];
-                double b3 = par[7];
-                double b4 = par[8];
+                double delta_bfield_coefficient = 0.0; //par[4];
+                double b1 = 0.0; //par[5];
+                double b2 = 0.0; //par[6];
+                double b3 = 0.0; //par[7];
+                double b4 = 0.0; //par[8];
                 
 		// Assume a functional form (time =
 		// First, calculate n
@@ -78,7 +78,7 @@ public class DCTimeFunction {
 		double a = -b * mPar / nPar; // From one of the constraints
 
 		double alpha = isReducedAngle(thetaDeg); // = 0.0; //Local angle in degrees.
-		System.out.println("this is alpha " + alpha);
+		//System.out.println("this is alpha " + alpha);
 		double cos30minusalpha = Math.cos((30. - alpha) / rad2deg); // =Math.cos(Math.toRadians(30.-alpha));
 		double xhat = x / dMax;
 		double dmaxalpha = dMax * cos30minusalpha;
