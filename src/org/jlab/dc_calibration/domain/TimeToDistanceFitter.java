@@ -80,6 +80,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private Map<Integer, Integer> wireMapTBHits;
 	private Map<Integer, Double> timeMapTBHits;
 	private Map<Integer, Double> trkDocaMapTBHits;
+        private Map<Integer, Double> BMapTBHits;
 	private Map<Integer, Integer> gSegmThBinMapTBSegments;
 	private Map<Integer, Double> gSegmAvgWireTBSegments;
 	private Map<Integer, Double> gFitChisqProbTBSegments;
@@ -300,7 +301,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 					hTtl = String.format("time vs. Doca (Sec=%d, SL=%d, th(%2.1f,%2.1f))", i, j + 1, thEdgeVzL[k], thEdgeVzH[k]); 
 					h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).setTitle(hTtl);
 					h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).setTitleX("Doca");
-					h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).setTitleX("Time");         
+					h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).setTitleY("Time (ns)");         
 
 				}
 			}
@@ -396,6 +397,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		wireMapTBHits = new HashMap<Integer, Integer>();
 		timeMapTBHits = new HashMap<Integer, Double>();
 		trkDocaMapTBHits = new HashMap<Integer, Double>();
+                BMapTBHits = new HashMap<Integer, Double>();
 
 		bnkHits = (EvioDataBank) event.getBank("TimeBasedTrkg::TBHits");
 		for (int j = 0; j < bnkHits.rows(); j++) {
@@ -403,6 +405,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 			wireMapTBHits.put(bnkHits.getInt("id", j), bnkHits.getInt("wire", j));
 			timeMapTBHits.put(bnkHits.getInt("id", j), bnkHits.getDouble("time", j));
 			trkDocaMapTBHits.put(bnkHits.getInt("id", j), bnkHits.getDouble("trkDoca", j));
+                        BMapTBHits.put(bnkHits.getInt("id", j), bnkHits.getDouble("B", j));
+                        //System.out.println("B = " + BMapTBHits.get(j));
 			int docaBin = (int) ((bnkHits.getDouble("trkDoca", j) - (-0.8)) / 0.2);
 			if (bnkHits.getInt("sector", j) == 1 && (docaBin > -1 && docaBin < 8)) {
 				hArrWire.get(new Coordinate(bnkHits.getInt("superlayer", j) - 1, bnkHits.getInt("layer", j) - 1, docaBin))
@@ -496,7 +500,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		// Done running fitter
 		// lets create lines we just fit
 		createFitLines();
-		int canvasPlace = 0;
+		int canvasPlace = 0; String Title;
 		for (int j = 0; j < nSL; j++) {
 			for (int k = 0; k < nThBinsVz; k++) {
 				sector1.cd(canvasPlace);
@@ -519,6 +523,20 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 				sector6.draw(h2timeVtrkDocaVZ.get(new Coordinate(5, j, k)));
 				 sector6.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
 
+                                Title = "Sec=1, SL=" + (j+1) + " theta=("+ thEdgeVzL[k] + "," + thEdgeVzH[k]+")";  sector1.getPad(j * nThBinsVz + k).setTitle(Title);
+                                Title = "Sec=2, SL=" + (j+1) + " theta=("+ thEdgeVzL[k] + "," + thEdgeVzH[k]+")";  sector2.getPad(j * nThBinsVz + k).setTitle(Title);
+                                Title = "Sec=3, SL=" + (j+1) + " theta=("+ thEdgeVzL[k] + "," + thEdgeVzH[k]+")";  sector3.getPad(j * nThBinsVz + k).setTitle(Title);
+                                Title = "Sec=4, SL=" + (j+1) + " theta=("+ thEdgeVzL[k] + "," + thEdgeVzH[k]+")";  sector4.getPad(j * nThBinsVz + k).setTitle(Title);
+                                Title = "Sec=5, SL=" + (j+1) + " theta=("+ thEdgeVzL[k] + "," + thEdgeVzH[k]+")";  sector5.getPad(j * nThBinsVz + k).setTitle(Title);
+                                Title = "Sec=6, SL=" + (j+1) + " theta=("+ thEdgeVzL[k] + "," + thEdgeVzH[k]+")";  sector6.getPad(j * nThBinsVz + k).setTitle(Title);
+
+                                sector1.setPadTitlesX("trkDoca/docaMax"); sector1.setPadTitlesY("time (ns)");
+                                sector2.setPadTitlesX("trkDoca/docaMax"); sector2.setPadTitlesY("time (ns)");
+                                sector3.setPadTitlesX("trkDoca/docaMax"); sector3.setPadTitlesY("time (ns)");
+                                sector4.setPadTitlesX("trkDoca/docaMax"); sector4.setPadTitlesY("time (ns)");
+                                sector5.setPadTitlesX("trkDoca/docaMax"); sector5.setPadTitlesY("time (ns)");
+                                sector6.setPadTitlesX("trkDoca/docaMax"); sector6.setPadTitlesY("time (ns)");   
+                                
 				sector1Profiles.cd(canvasPlace);
 				sector2Profiles.cd(canvasPlace);
 				sector3Profiles.cd(canvasPlace);
@@ -596,9 +614,65 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
             for (int j = 0; j < nSL; j++) {
                 pLow[2] = tMaxSL[j] * 0.4;
                 pHigh[2] = tMaxSL[j] * 1.6;
+                //for (int k = 0; k < nThBinsVz; k++) {
+                    mapOfFitFunctions.put(new Coordinate(i, j),
+                            //new DCFitFunction(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX(), j, k, isLinearFit));
+                            //new DCFitFunction(h2timeVtrkDocaVZ, i, j, k, isLinearFit));
+                            new DCFitFunction(h2timeVtrkDocaVZ, i, j, isLinearFit));
+                    mapOfFitParameters.put(new Coordinate(i, j), new MnUserParameters());
+                    for (int p = 0; p < nFreePars; p++) {
+                        mapOfFitParameters.get(new Coordinate(i, j)).add(parName[p], prevFitPars[p], parSteps[p], pLow[p], pHigh[p]);
+                    }
+                    mapOfFitParameters.get(new Coordinate(i, j)).setValue(2, tMaxSL[j]);// tMax for SLth superlayer
+                    //mapOfFitParameters.get(new Coordinate(i, j, k)).fix(2);
+                    MnMigrad migrad
+                            = new MnMigrad(mapOfFitFunctions.get(new Coordinate(i, j)), mapOfFitParameters.get(new Coordinate(i, j)));
+                    FunctionMinimum min = migrad.minimize();
+
+                    if (!min.isValid()) {
+                        // try with higher strategy
+                        System.out.println("FM is invalid, try with strategy = 2.");
+                        MnMigrad migrad2 = new MnMigrad(mapOfFitFunctions.get(new Coordinate(i, j)), min.userState(), new MnStrategy(2));
+                        min = migrad2.minimize();
+                    }
+                    mapTmpUserFitParameters.put(new Coordinate(i, j), min.userParameters());
+                    double[] fPars = new double[nFreePars];
+                    double[] fErrs = new double[nFreePars];
+                    for (int p = 0; p < nFreePars; p++) {
+                        fPars[p] = mapTmpUserFitParameters.get(new Coordinate(i, j)).value(parName[p]);
+                        fErrs[p] = mapTmpUserFitParameters.get(new Coordinate(i, j)).error(parName[p]);
+                    }
+                    mapOfUserFitParameters.put(new Coordinate(i, j), fPars);
+                //} // end of nThBinsVz loop
+            } // end of superlayer loop
+        } // end of sector loop
+
+    }
+
+    
+        public void runFitterOld() {
+
+        final int nFreePars = 4;
+
+        // initial guess of tMax for the 6 superlayers (cell sizes are different for each)
+        // This is one of the free parameters (par[2], but fixed for now.)
+        //double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 }; //Moved to Constants.java
+        // Now start minimization
+        double parSteps[] = {0.00001, 0.001, 0.01, 0.0001};
+        double pLow[] = {prevFitPars[0] * 0.01, prevFitPars[1] * 0.0, tMaxSL[0] * 0.4, prevFitPars[3] * 0.0};
+        double pHigh[] = {prevFitPars[0] * 3.0, prevFitPars[1] * 5.0, tMaxSL[0] * 1.6, prevFitPars[3] * 1.6};
+
+        Map<Coordinate, MnUserParameters> mapTmpUserFitParameters = new HashMap<Coordinate, MnUserParameters>();
+
+        for (int i = 0; i < nSectors; i++) {
+            for (int j = 0; j < nSL; j++) {
+                pLow[2] = tMaxSL[j] * 0.4;
+                pHigh[2] = tMaxSL[j] * 1.6;
                 for (int k = 0; k < nThBinsVz; k++) {
                     mapOfFitFunctions.put(new Coordinate(i, j, k),
-                            new DCFitFunction(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX(), j, k, isLinearFit));
+                            //new DCFitFunction(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX(), j, k, isLinearFit));
+                            //new DCFitFunction(h2timeVtrkDocaVZ, i, j, k, isLinearFit));
+                            new DCFitFunction(h2timeVtrkDocaVZ, i, j, isLinearFit));
                     mapOfFitParameters.put(new Coordinate(i, j, k), new MnUserParameters());
                     for (int p = 0; p < nFreePars; p++) {
                         mapOfFitParameters.get(new Coordinate(i, j, k)).add(parName[p], prevFitPars[p], parSteps[p], pLow[p], pHigh[p]);
@@ -628,7 +702,6 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         } // end of sector loop
 
     }
-
 	private void createFitLines() {
 		for (int i = 0; i < nSectors; i++) {
 			for (int j = 0; j < nSL; j++) {
@@ -639,7 +712,9 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 					mapOfFitLines.get(new Coordinate(i, j, k)).setLineColor(2);
 					mapOfFitLines.get(new Coordinate(i, j, k)).setLineWidth(3);
 					mapOfFitLines.get(new Coordinate(i, j, k)).setLineStyle(4);
-					mapOfFitLines.get(new Coordinate(i, j, k)).setParameters(mapOfUserFitParameters.get(new Coordinate(i, j, k)));
+					//mapOfFitLines.get(new Coordinate(i, j, k)).setParameters(mapOfUserFitParameters.get(new Coordinate(i, j, k)));
+                                        //Because we do the simultaneous fit over all theta bins, we have the same set of pars for all theta-bins.
+					mapOfFitLines.get(new Coordinate(i, j, k)).setParameters(mapOfUserFitParameters.get(new Coordinate(i, j)));
 				}
 			}
 		}
