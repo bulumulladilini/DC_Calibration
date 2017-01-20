@@ -98,8 +98,7 @@ public class DCMonitoring {
 
 	private void createHistograms() {
 		for (int i = 0; i < 6; i++) {
-			cross_yvsx.put(new Coordinate(i),
-					new H2F("y vs x sector" + (i + 1), "sector" + (i + 1), 180, -180, 180, 120, -140, 140));
+			cross_yvsx.put(new Coordinate(i), new H2F("y vs x sector" + (i + 1), "sector" + (i + 1), 180, -180, 180, 120, -140, 140));
 			cross_yvsx.get(new Coordinate(i)).setTitleX("x");
 			cross_yvsx.get(new Coordinate(i)).setTitleY("y");
 			cross_uyvsux.put(new Coordinate(i), new H2F("Uy vs Ux sector" + (i + 1), "", 100, -1, 1, 100, -1, 1));
@@ -107,8 +106,7 @@ public class DCMonitoring {
 			cross_uyvsux.get(new Coordinate(i)).setTitleY("Uy");
 			Ntksperevnt.put(new Coordinate(i), new H1F("tracks per sector" + (i + 1), "sector" + (i + 1), 20, 0, 20));
 			Ntksperevnt.get(new Coordinate(i)).setTitleX("Number of tracks/ evnt");
-			Chisqpertrck.put(new Coordinate(i),
-					new H1F("Track Chi squared sector " + (i + 1), "sector" + (i + 1), 100, 0, 10));
+			Chisqpertrck.put(new Coordinate(i), new H1F("Track Chi squared sector " + (i + 1), "sector" + (i + 1), 100, 0, 10));
 			Chisqpertrck.get(new Coordinate(i)).setTitleX("Track  Chi squared");
 			Residual.put(new Coordinate(i), new H1F("Residual sector" + (i + 1), "sector" + (i + 1), 100, -1, 1));
 			Residual.get(new Coordinate(i)).setTitle("Residual sector" + (i + 1));
@@ -118,29 +116,24 @@ public class DCMonitoring {
 			Theta.get(new Coordinate(i)).setTitleX("Theta sector" + (i + 1));
 			Phi.put(new Coordinate(i), new H1F("Phi sector" + (i + 1), "sector" + (i + 1), 100, -Math.PI, Math.PI));
 			Phi.get(new Coordinate(i)).setTitleX("Phi sector" + (i + 1));
-			thetaVSmomenutm.put(new Coordinate(i),
-					new H2F("Theta VS p sector" + (i + 1), "sector" + (i + 1), 100, 0, 8, 100, 0, Math.PI));
+			thetaVSmomenutm.put(new Coordinate(i), new H2F("Theta VS p sector" + (i + 1), "sector" + (i + 1), 100, 0, 8, 100, 0, Math.PI));
 			thetaVSmomenutm.get(new Coordinate(i)).setTitleX("p sector" + (i + 1));
 			thetaVSmomenutm.get(new Coordinate(i)).setTitleY("theta ");
-			thetaVSphi.put(new Coordinate(i), new H2F("Theta VS phi sector" + (i + 1), "sector" + (i + 1), 100,
-					-Math.PI, Math.PI, 100, 0, Math.PI));
+			thetaVSphi.put(new Coordinate(i),
+			        new H2F("Theta VS phi sector" + (i + 1), "sector" + (i + 1), 100, -Math.PI, Math.PI, 100, 0, Math.PI));
 			thetaVSphi.get(new Coordinate(i)).setTitleX("phi sector" + (i + 1));
 			thetaVSphi.get(new Coordinate(i)).setTitleY("theta ");
 			for (int j = 0; j < 6; j++) {
-				occupanciesByCoordinate.put(new Coordinate(i, j),
-						new H2F("Occupancy all hits" + i, "", 112, 1, 113, 6, 1, 7));
+				occupanciesByCoordinate.put(new Coordinate(i, j), new H2F("Occupancy all hits" + i, "", 112, 1, 113, 6, 1, 7));
 				occupanciesByCoordinate.get(new Coordinate(i, j)).setTitleX("Wire Sector" + (j + 1));
 				occupanciesByCoordinate.get(new Coordinate(i, j)).setTitleY("Layer SL" + (i + 1));
-				occupanciesintrack.put(new Coordinate(i, j),
-						new H2F("Occupancy used in track" + i, "", 112, 1, 113, 6, 1, 7));
+				occupanciesintrack.put(new Coordinate(i, j), new H2F("Occupancy used in track" + i, "", 112, 1, 113, 6, 1, 7));
 				occupanciesintrack.get(new Coordinate(i, j)).setTitleX("Wire Sector" + (j + 1));
 				occupanciesintrack.get(new Coordinate(i, j)).setTitleY("Layer SL" + (i + 1));
 				if ((j % 6 == 0) || (j % 6 == 1)) {
-					trkdocasvstime.put(new Coordinate(i, j),
-							new H2F("TrackDoca vs time" + j, "", 100, 0, 200, 100, 0, 1));
+					trkdocasvstime.put(new Coordinate(i, j), new H2F("TrackDoca vs time" + j, "", 100, 0, 200, 100, 0, 1));
 				} else
-					trkdocasvstime.put(new Coordinate(i, j),
-							new H2F("TrackDoca vs time" + j, "", 100, 0, 600, 100, 0, 2));
+					trkdocasvstime.put(new Coordinate(i, j), new H2F("TrackDoca vs time" + j, "", 100, 0, 600, 100, 0, 2));
 				trkdocasvstime.get(new Coordinate(i, j)).setTitleY("time");
 				trkdocasvstime.get(new Coordinate(i, j)).setTitleY("TrackDoca");
 			}
@@ -209,11 +202,10 @@ public class DCMonitoring {
 	private void processTBHits(DataEvent event) {
 		DataBank bnkHits = event.getBank("TimeBasedTrkg::TBHits");
 		for (int i = 0; i < bnkHits.rows(); i++) {
-			occupanciesByCoordinate
-					.get(new Coordinate(bnkHits.getInt("superlayer", i) - 1, bnkHits.getInt("sector", i) - 1))
-					.fill(bnkHits.getInt("wire", i), bnkHits.getInt("layer", i));
+			occupanciesByCoordinate.get(new Coordinate(bnkHits.getInt("superlayer", i) - 1, bnkHits.getInt("sector", i) - 1))
+			        .fill(bnkHits.getInt("wire", i), bnkHits.getInt("layer", i));
 			trkdocasvstime.get(new Coordinate(bnkHits.getInt("sector", i) - 1, bnkHits.getInt("superlayer", i) - 1))
-					.fill(bnkHits.getFloat("time", i), bnkHits.getFloat("trkDoca", i));
+			        .fill(bnkHits.getFloat("time", i), bnkHits.getFloat("trkDoca", i));
 			Residual.get(new Coordinate(bnkHits.getInt("sector", i) - 1)).fill(bnkHits.getFloat("timeResidual", i));
 		}
 
@@ -222,10 +214,10 @@ public class DCMonitoring {
 	private void processTBCrosses(DataEvent event) {
 		DataBank tbcrossesBank = event.getBank("TimeBasedTrkg::TBCrosses");
 		for (int i = 0; i < tbcrossesBank.rows(); i++) {
-			cross_uyvsux.get(new Coordinate(tbcrossesBank.getInt("sector", i) - 1))
-					.fill(tbcrossesBank.getFloat("ux", i), tbcrossesBank.getFloat("uy", i));
+			cross_uyvsux.get(new Coordinate(tbcrossesBank.getInt("sector", i) - 1)).fill(tbcrossesBank.getFloat("ux", i),
+			        tbcrossesBank.getFloat("uy", i));
 			cross_yvsx.get(new Coordinate(tbcrossesBank.getInt("sector", i) - 1)).fill(tbcrossesBank.getFloat("x", i),
-					tbcrossesBank.getFloat("y", i));
+			        tbcrossesBank.getFloat("y", i));
 		}
 	}
 
@@ -254,21 +246,14 @@ public class DCMonitoring {
 			Theta.get(new Coordinate(tbtracksBank.getInt("sector", i) - 1)).fill(momentum.theta());
 			Phi.get(new Coordinate(tbtracksBank.getInt("sector", i) - 1)).fill(momentum.phi());
 			/*
-			 * for (int j = 1; j < 4; j++) { for (int j2 = 1; j2 < 3; j2++) {
-			 * for (int k = 0; k < tbsegmBank.getInt("size",
-			 * tbcrossBank.getInt("Segment" + j2 + "_ID",
-			 * tbtracksBank.getInt("Cross" + j + "_ID", i))); k++) {
+			 * for (int j = 1; j < 4; j++) { for (int j2 = 1; j2 < 3; j2++) { for (int k = 0; k < tbsegmBank.getInt("size", tbcrossBank.getInt("Segment" + j2 +
+			 * "_ID", tbtracksBank.getInt("Cross" + j + "_ID", i))); k++) {
 			 * 
 			 * for (int k2 = 0; k2 < tbhitsBank.rows(); k2++) {
 			 *
-			 * if (tbhitsBank.getInt("ID", k2) == tbsegmBank.getInt("Hit" + (k2
-			 * + 1) + "_ID", tbcrossBank .getInt("Segment" + j2 + "_ID",
-			 * tbtracksBank.getInt("Cross" + j + "_ID", i)))) {
-			 * occupanciesintrack .get(new
-			 * Coordinate(tbhitsBank.getInt("superlayer", k2) - 1,
-			 * tbhitsBank.getInt("sector", k2) - 1))
-			 * .fill(tbhitsBank.getInt("wire", k2), tbhitsBank.getInt("layer",
-			 * k2)); }
+			 * if (tbhitsBank.getInt("ID", k2) == tbsegmBank.getInt("Hit" + (k2 + 1) + "_ID", tbcrossBank .getInt("Segment" + j2 + "_ID", tbtracksBank.getInt("Cross"
+			 * + j + "_ID", i)))) { occupanciesintrack .get(new Coordinate(tbhitsBank.getInt("superlayer", k2) - 1, tbhitsBank.getInt("sector", k2) - 1))
+			 * .fill(tbhitsBank.getInt("wire", k2), tbhitsBank.getInt("layer", k2)); }
 			 *
 			 * }
 			 * 
@@ -349,15 +334,13 @@ public class DCMonitoring {
 	}
 
 	public static void main(String[] args) {
-		// String fileName =
-		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio";
-		// DCMonitoring test = new DCMonitoring(fileName);
 
 		// Uncomment to test using EvioDataChain
 		HipoDataSource chain = new HipoDataSource();
-		String fileName = "/Users/omcortes/jlab/rec_file0.hipo";
-		chain.open(fileName);
-		fileName = "/Users/omcortes/jlab/rec_file0.hipo";
+		String fileName;
+		// fileName = "/Users/omcortes/jlab/rec_file0.hipo";
+		fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/MonitoringData/rec_file0.hipo";
+
 		chain.open(fileName);
 
 		DCMonitoring test = new DCMonitoring(chain);
