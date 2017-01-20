@@ -2,80 +2,92 @@
  *
  * @author KPAdhikari
  */
-package org.jlab.dc_calibration.domain;
+package org.jlab.dc_calibration;
 
 import static org.jlab.dc_calibration.domain.Constants.beta;
 import static org.jlab.dc_calibration.domain.Constants.cos30;
+import static org.jlab.dc_calibration.domain.Constants.nThBinsVz;
 import static org.jlab.dc_calibration.domain.Constants.rad2deg;
 import static org.jlab.dc_calibration.domain.Constants.thEdgeVzH;
 import static org.jlab.dc_calibration.domain.Constants.thEdgeVzL;
 import static org.jlab.dc_calibration.domain.Constants.wpdist;
 
 import org.freehep.math.minuit.FCNBase;
+import static org.jlab.dc_calibration.domain.Constants.nSectors;
 import org.jlab.groot.data.GraphErrors;
 
 public class KrishnaFcn implements FCNBase {
-
-	private int slNum;
+        
+        private int Sector;
+	private int SL;
 	private int nThBins;
-	private GraphErrors[][] profileX;
+	private GraphErrors[][][] profileX;
+	private boolean isLinear = false;
 
-	public KrishnaFcn(int slNum, int nThBins, GraphErrors[][] profileX) {
-		this.profileX = profileX;
-		this.slNum = slNum;
+	public KrishnaFcn(int Sector, int SL, int nThBins, GraphErrors[][][] profileX, boolean isLinear) {
+		this.Sector = Sector;
+		this.SL = SL;
 		this.nThBins = nThBins;
+                this.profileX = profileX;
+		this.isLinear = isLinear;
 	}
 
 	public double errorDef() {
 		return 1;
 	}
 
-	public double valueOf(double[] par) {
-		double c = par[0], m = par[1]; // straight line equation: y = m*x + c
-		double delta = 0.;
-		double chisq = 0.;
-		double fval = 0.;
-		double thetaDeg = 0.;
-		double docaNorm = 0.;
-		double measTime = 0.;
-		double measTimeErr = 0.;
-		double calcTime = 0.;
+    public double valueOf(double[] par) {
+        double delta = 0.;
+        double chisq = 0.;
+        double thetaDeg = 0.;
+        double docaNorm = 0.;
+        double measTime = 0.;
+        double measTimeErr = 0.;
+        double calcTime = 0.;
+        for (int th = 1; th < nThBinsVz; th++) { // Using only some theta binsbetween 0 and 30 degrees
+            thetaDeg = 0.5 * (thEdgeVzL[th] + thEdgeVzH[th]);// No 0.5 factor used before 9/20/16
+            for (int i = 0; i < profileX[Sector][SL][th].getDataSize(0); i++) {
+                docaNorm = profileX[Sector][SL][th].getDataX(i);
+                measTime = profileX[Sector][SL][th].getDataY(i);
+                measTimeErr = profileX[Sector][SL][th].getDataEY(i);
+                calcTime = isLinear ? calcTimeFunc(0, Sector, SL + 1, docaNorm, par) : calcTimeFunc(0, Sector, SL + 1, thetaDeg, docaNorm, par);
 
-		for (int sl = 0; sl < slNum; sl++) {
-			for (int th = 1; th < 3; th++) { // Using only some theta bins
-			                                 // between 0 and 30 degress
-				thetaDeg = 0.5 * (thEdgeVzL[th] + thEdgeVzH[th]);// No 0.5 factor used before 9/20/16
-				for (int i = 0; i < profileX[sl][th].getDataSize(0); i++) {
-					docaNorm = profileX[sl][th].getDataX(i);
-					measTime = profileX[sl][th].getDataY(i);
-					// measTimeErr = profileX[sl][th].getErrorY(i);
-					measTimeErr = profileX[sl][th].getDataEY(i);
-					calcTime = calcTimeFunc(-1, sl + 1, thetaDeg, docaNorm, par);
+                // 9/27/16: without docaNorm<0.9, the minimization was
+                // very unstable. For example,
+                // tmax for SL=2 (i.e. tmax2) came out around 150 when
+                // the # of events used was N=20000 or 200000
+                // where as it came out around 88 ns when N was
+                // somewhere in between such as 80000, 100000 etc.
+                // My guess was some of the bins with very low statistic
+                // had unrealistic errors bars and biased
+                // the minimization. When I used "delta = (measTime -
+                // calcTime);", the tmax2 result was more
+                // realistic (i.e., closer to 150 ns) than 88 ns.
+                // if(measTimeErr==measTimeErr && measTimeErr>0.0 )
+                if (measTimeErr == measTimeErr && measTimeErr > 0.0 && docaNorm < 0.9) {
+                    delta = (measTime - calcTime) / measTimeErr; // error weighted deviation
+                    chisq += delta * delta;
+                }
+            }
+        }
 
-					// 9/27/16: without docaNorm<0.9, the minimization was
-					// very unstable. For example,
-					// tmax for SL=2 (i.e. tmax2) came out around 150 when
-					// the # of events used was N=20000 or 200000
-					// where as it came out around 88 ns when N was
-					// somewhere in between such as 80000, 100000 etc.
-					// My guess was some of the bins with very low statistic
-					// had unrealistic errors bars and biased
-					// the minimization. When I used "delta = (measTime -
-					// calcTime);", the tmax2 result was more
-					// realistic (i.e., closer to 150 ns) than 88 ns.
-					// if(measTimeErr==measTimeErr && measTimeErr>0.0 )
-					if (measTimeErr == measTimeErr && measTimeErr > 0.0 && docaNorm < 0.9) {
-						delta = (measTime - calcTime) / measTimeErr; // error weighted deviation
-						chisq += delta * delta;
-					}
-				}
-			}
-		}
-		// System.out.println("chisq = " + chisq);
-		return chisq;// fval;
+        // System.out.println("chisq = " + chisq);
+        return chisq;// fval;
+    }
+
+	protected double calcTimeFunc(int debug, int Sector, int SL, double docaByDocaMax, double[] par) {
+		double dMax = 2 * wpdist[SL - 1];
+		double x = docaByDocaMax * dMax;
+		double v0Par = par[0];
+		double calcTime = x / v0Par;
+		if (debug == 1)
+			System.out.println("v0Par = " + v0Par + " calcTime: " + calcTime);
+
+		return calcTime;
+
 	}
 
-	public double calcTimeFunc(int debug, int SL, double thetaDeg, double docaByDocaMax, double[] par) // 9/4/16
+	protected double calcTimeFunc(int debug, int Sector, int SL, double thetaDeg, double docaByDocaMax, double[] par) // 9/4/16
 	{
 		// From one of M. Mestayer's email:
 		// Double_t time = x/v0 + a0*pow(Xhat0, n) + b0*pow(Xhat0,m); //Here
@@ -93,11 +105,11 @@ public class KrishnaFcn implements FCNBase {
 		double dMax = 2 * wpdist[SL - 1], Dc = dMax * cos30;
 		// double cos30 = Math.cos(30.0/rad2deg);//Now it's a global
 		// constant to avoid repeated calc. (see above main())
-		double X = docaByDocaMax, x = X * dMax, Xhat0 = X / cos30;
-		double v0Par = par[0], deltanm = par[1], tMax = par[2];
-		if (SL == 2)
-			tMax = par[3];
-		double distbeta = par[4]; // 8/3/16: initial value given by Mac is 0.050 cm.
+		double x = docaByDocaMax * dMax;
+		double v0Par = par[0];
+		double deltanm = par[1];
+		double tMax = par[2];		
+		double distbeta = par[3]; // 8/3/16: initial value given by Mac is 0.050 cm.
 		// Assume a functional form (time =
 		// x/v0+a*(x/dmax)**n+b*(x/dmax)**m) for theta = 30 deg.
 		// First, calculate n

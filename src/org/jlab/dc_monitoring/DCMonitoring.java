@@ -359,6 +359,7 @@ public class DCMonitoring {
 		chain.open(fileName);
 		fileName = "/Users/omcortes/jlab/rec_file0.hipo";
 		chain.open(fileName);
+
 		DCMonitoring test = new DCMonitoring(chain);
 
 	}

@@ -31,7 +31,6 @@ import org.freehep.math.minuit.FunctionMinimum;
 import org.freehep.math.minuit.MnMigrad;
 import org.freehep.math.minuit.MnStrategy;
 import org.freehep.math.minuit.MnUserParameters;
-import org.jlab.dc_calibration.domain.calibFnToDraw_withGROOT;
 import org.jlab.groot.base.TStyle;
 import org.jlab.groot.data.GraphErrors;
 import org.jlab.groot.data.H1F;
@@ -1192,7 +1191,8 @@ public class ReadRecDataForMinuit implements ActionListener {
 			for (int j = 0; j < nThBinsVz; j++) {
 				hNm = String.format("myFitLinesS%dTh%d", i + 1, j);
 				System.out.println("debug10 ..");
-				myFitLinesGroot[i][j] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0);
+				//myFitLinesGroot[i][j] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0,false);
+				myFitLinesGroot[i][j] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0,1,i,j,false);
 				System.out.println("debug11 ..");
 				myFitLinesGroot[i][j].setLineColor(3);
 				myFitLinesGroot[i][j].setLineWidth(3);

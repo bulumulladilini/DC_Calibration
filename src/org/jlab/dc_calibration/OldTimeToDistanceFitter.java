@@ -10,7 +10,7 @@
  * (________(                @author m.c.kunkel
  *  `------'				 @author KPAdhikari
 */
-package org.jlab.dc_calibration.domain;
+package org.jlab.dc_calibration;
 
 import static org.jlab.dc_calibration.domain.Constants.nHists;
 import static org.jlab.dc_calibration.domain.Constants.nLayer;
@@ -40,6 +40,10 @@ import org.freehep.math.minuit.MnMigrad;
 import org.freehep.math.minuit.MnStrategy;
 import org.freehep.math.minuit.MnUserParameters;
 import org.jlab.dc_calibration.NTuple.NTuple;
+import org.jlab.dc_calibration.domain.Coordinate;
+import org.jlab.dc_calibration.domain.DCFitFunction;
+import org.jlab.dc_calibration.domain.DCTabbedPane;
+import org.jlab.dc_calibration.domain.OrderOfAction;
 import org.jlab.groot.base.TStyle;
 import org.jlab.groot.data.GraphErrors;
 import org.jlab.groot.data.H1F;
@@ -49,13 +53,11 @@ import org.jlab.io.evio.EvioDataBank;
 import org.jlab.io.evio.EvioDataChain;
 import org.jlab.io.evio.EvioDataEvent;
 
-public class TimeToDistanceFitter implements ActionListener, Runnable {
+public class OldTimeToDistanceFitter implements ActionListener, Runnable {
 
 	private EvioDataBank bnkHits;
 	private EvioDataBank bnkSegs;
 	private EvioDataBank bnkSegTrks;
-	private EvioDataBank bnkTrks;
-	private int nTrks;
 
 	private Map<Coordinate, H1F> hArrWire = new HashMap<Coordinate, H1F>();
 	private Map<Coordinate, H1F> h1ThSL = new HashMap<Coordinate, H1F>();
@@ -82,6 +84,11 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private Map<Integer, Double> gSegmAvgWireTBSegments;
 	private Map<Integer, Double> gFitChisqProbTBSegments;
 
+	private EmbeddedCanvas c0;
+	private EmbeddedCanvas c01;
+	private EmbeddedCanvas c03;
+	private EmbeddedCanvas c06;
+
 	private EmbeddedCanvas sector1;
 	private EmbeddedCanvas sector2;
 	private EmbeddedCanvas sector3;
@@ -89,22 +96,16 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private EmbeddedCanvas sector5;
 	private EmbeddedCanvas sector6;
 
-	private EmbeddedCanvas sector1Profiles;
-	private EmbeddedCanvas sector2Profiles;
-	private EmbeddedCanvas sector3Profiles;
-	private EmbeddedCanvas sector4Profiles;
-	private EmbeddedCanvas sector5Profiles;
-	private EmbeddedCanvas sector6Profiles;
-
+	private GraphErrors[][] profileX;
+	private GraphErrors[][][] profileXvz;
+	private GraphErrors[][] profileY;
 	private Map<Coordinate, GraphErrors> htime2DisDocaProfile = new HashMap<Coordinate, GraphErrors>();
 	private Map<Coordinate, DCFitFunction> mapOfFitFunctions = new HashMap<Coordinate, DCFitFunction>();
-	private Map<Coordinate, MnUserParameters> mapOfFitParameters = new HashMap<Coordinate, MnUserParameters>();
-	private Map<Coordinate, double[]> mapOfUserFitParameters = new HashMap<Coordinate, double[]>();
-	private Map<Coordinate, DCFitDrawer> mapOfFitLines = new HashMap<Coordinate, DCFitDrawer>();
 
-	private H2F testHist;
 	private boolean acceptorder = false;
 	private boolean isLinearFit;
+	// private double[] pars4FitLine = { prevFitPars[0], prevFitPars[1], prevFitPars[2], prevFitPars[3], prevFitPars[4], 1.0, 0.0, 0.3861 };
+	private double[][][] pars4FitLine = new double[nSectors][nSL][4];
 
 	private ArrayList<String> fileArray;
 	private EvioDataChain reader;
@@ -115,29 +116,27 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	private NTuple nTupletimeVtrkDocaVZ;
 	double[] tupleVars;
 
-	public TimeToDistanceFitter(ArrayList<String> files, boolean isLinearFit) {
+	public OldTimeToDistanceFitter(ArrayList<String> files, boolean isLinearFit) {
 		this.fileArray = files;
 		this.reader = new EvioDataChain();
 		this.dcTabbedPane = new DCTabbedPane("PooperDooper");
 		this.isLinearFit = isLinearFit;
 		this.nTupletimeVtrkDocaVZ = new NTuple("testData", "Sector:SuperLayer:ThetaBin:Doca:Time");
-		this.tupleVars = new double[5]; 
+		this.tupleVars = new double[5];
 		createHists();
 	}
 
-	public TimeToDistanceFitter(OrderOfAction OAInstance, ArrayList<String> files, boolean isLinearFit) {
+	public OldTimeToDistanceFitter(OrderOfAction OAInstance, ArrayList<String> files, boolean isLinearFit) {
 		this.fileArray = files;
 		this.OAInstance = OAInstance;
 		this.reader = new EvioDataChain();
 		this.dcTabbedPane = new DCTabbedPane("PooperDooper");
-                this.nTupletimeVtrkDocaVZ = new NTuple("testData", "Sector:SuperLayer:ThetaBin:Doca:Time");
-		this.tupleVars = new double[5]; 
 		this.isLinearFit = isLinearFit;
 		createHists();
 	}
 
 	private void createHists() {
-		testHist = new H2F("A test of superlayer6 at thetabin6", 200, 0.0, 1.0, 150, 0.0, 200.0);
+
 		TStyle.createAttributes();
 		String hNm = "";
 		String hTtl = "";
@@ -303,6 +302,18 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 	}
 
 	private void createCanvas() {
+		c0 = new EmbeddedCanvas();
+		c0.setSize(4 * 400, 3 * 400);
+		c0.divide(4, 3);
+		c01 = new EmbeddedCanvas();
+		c01.setSize(3 * 400, 2 * 400);
+		c01.divide(1, 2);
+		c03 = new EmbeddedCanvas();
+		c03.setSize(4 * 400, nThBinsVz * 400);
+		c03.divide(4, nThBinsVz);
+		c06 = new EmbeddedCanvas();
+		c06.setSize(4 * 400, 6 * 400);
+		c06.divide(4, 6);
 
 		sector1 = new EmbeddedCanvas();
 		sector2 = new EmbeddedCanvas();
@@ -311,39 +322,18 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		sector5 = new EmbeddedCanvas();
 		sector6 = new EmbeddedCanvas();
 
-		sector1Profiles = new EmbeddedCanvas();
-		sector2Profiles = new EmbeddedCanvas();
-		sector3Profiles = new EmbeddedCanvas();
-		sector4Profiles = new EmbeddedCanvas();
-		sector5Profiles = new EmbeddedCanvas();
-		sector6Profiles = new EmbeddedCanvas();
-
-		sector1.setSize(nThBinsVz* 400, nSL * 400);
-		sector1.divide(nThBinsVz, nSL);
-		sector2.setSize(nThBinsVz* 400, nSL * 400);
-		sector2.divide(nThBinsVz, nSL);
-		sector3.setSize(nThBinsVz* 400, nSL * 400);
-		sector3.divide(nThBinsVz, nSL);
-		sector4.setSize(nThBinsVz* 400, nSL * 400);
-		sector4.divide(nThBinsVz, nSL);
-		sector5.setSize(nThBinsVz* 400, nSL * 400);
-		sector5.divide(nThBinsVz, nSL);
-		sector6.setSize(nThBinsVz* 400, nSL * 400);
-		sector6.divide(nThBinsVz, nSL);
-
-		sector1Profiles.setSize(nThBinsVz* 400, nSL * 400);
-		sector1Profiles.divide(nThBinsVz, nSL);
-		sector2Profiles.setSize(nThBinsVz* 400, nSL * 400);
-		sector2Profiles.divide(nThBinsVz, nSL);
-		sector3Profiles.setSize(nThBinsVz* 400, nSL * 400);
-		sector3Profiles.divide(nThBinsVz, nSL);
-		sector4Profiles.setSize(nThBinsVz* 400, nSL * 400);
-		sector4Profiles.divide(nThBinsVz, nSL);
-		sector5Profiles.setSize(nThBinsVz* 400, nSL * 400);
-		sector5Profiles.divide(nThBinsVz, nSL);
-		sector6Profiles.setSize(nThBinsVz* 400, nSL * 400);
-		sector6Profiles.divide(nThBinsVz, nSL);
-
+		sector1.setSize(4 * 400, 6 * 400);
+		sector1.divide(6, 6);
+		sector2.setSize(4 * 400, 6 * 400);
+		sector2.divide(6, 6);
+		sector3.setSize(4 * 400, 6 * 400);
+		sector3.divide(6, 6);
+		sector4.setSize(4 * 400, 6 * 400);
+		sector4.divide(6, 6);
+		sector5.setSize(4 * 400, 6 * 400);
+		sector5.divide(6, 6);
+		sector6.setSize(4 * 400, 6 * 400);
+		sector6.divide(6, 6);
 	}
 
 	protected void processData() {
@@ -354,24 +344,18 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		}
 		reader.open();
 		while (reader.hasEvent()) {// && icounter < 100
-
 			icounter++;
 			if (icounter % 2000 == 0) {
 				System.out.println("Processed " + icounter + " events.");
 			}
 			EvioDataEvent event = reader.getNextEvent();
-			ProcessTBSegmentTrajectory tbSegmentTrajectory = new ProcessTBSegmentTrajectory(event);
-			if (tbSegmentTrajectory.getNsegs() > 0) {
+			if (event.hasBank("TimeBasedTrkg::TBSegmentTrajectory")) {
 				counter++;
 			}
-			if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBSegments")) {// && event.hasBank("TimeBasedTrkg::TBSegmentTrajectory") &&
-			                                                                                           // event.hasBank("TimeBasedTrkg::TBTracks")
-				ProcessTBTracks tbTracks = new ProcessTBTracks(event);
-				if (tbTracks.getNTrks() > 0) {
-					processTBhits(event);
-					processTBSegments(event);
-				}
-
+			if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBSegments")) {// && event.hasBank("TimeBasedTrkg::TBSegmentTrajectory")
+				processTBhits(event);
+				processTBSegments(event);
+				// // processTBSegmentTrajectory(event);
 			}
 
 		}
@@ -415,7 +399,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 			gFitChisqProbTBSegments.put(bnkSegs.getInt("ID", j), bnkSegs.getDouble("fitChisqProb", j));
 
 			double thDeg = rad2deg * Math.atan2(bnkSegs.getDouble("fitSlope", j), 1.0);
-			h1ThSL.get(new Coordinate(bnkSegs.getInt("superlayer", j) - 1)).fill(thDeg);
+			h1ThSL.get(new Coordinate(bnkHits.getInt("superlayer", j) - 1)).fill(thDeg);
 			for (int h = 1; h <= 12; h++) {
 				if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1)
 					nHitsInSeg++;
@@ -434,7 +418,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 			double thTmp1 = thDeg;
 			double thTmp2 = thDeg - 30.0;
 			double docaMax = 2.0 * wpdist[superlayer - 1];
-			for (int h = 1; h <= 12; h++) {
+			for (int h = 0; h < 12; h++) {
 				if (nHitsInSeg > 5)// Saving only those with more than 5 hits
 				{
 					Double gTime = timeMapTBHits.get(new Integer(bnkSegs.getInt("Hit" + h + "_ID", j)));
@@ -447,44 +431,194 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 						h2timeVtrkDoca.get(new Coordinate(superlayer - 1, 0)).fill(Math.abs(gTrkDoca), gTime);
 					if (Math.abs(thTmp2) < 1.0 && bnkSegs.getInt("Hit" + h + "_ID", j) > -1)
 						h2timeVtrkDoca.get(new Coordinate(superlayer - 1, 1)).fill(Math.abs(gTrkDoca), gTime);
-					if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBnVz > -1 && thBnVz < nThBinsVz) {// && thBnVz < nThBinsVz
+					if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBnVz > -1 && thBnVz < nThBinsVz) {
 						double docaNorm = gTrkDoca / docaMax;
 						h2timeVtrkDocaVZ.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(docaNorm), gTime);
-					}
-					// here I will fill a test histogram of superlay6 and thetabin6
-					if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBnVz == 5 && superlayer == 6) {
-						double docaNorm = gTrkDoca / docaMax;
 						tupleVars[0] = (double) sector;
 						tupleVars[1] = (double) superlayer;
 						tupleVars[2] = (double) thBnVz;
 						tupleVars[3] = Math.abs(docaNorm);
 						tupleVars[4] = gTime;
 						nTupletimeVtrkDocaVZ.addRow(tupleVars);
-						testHist.fill(Math.abs(docaNorm), gTime);
 					}
-
 				}
 			}
 		}
 
 	}
 
+	private void processTBSegmentTrajectory(EvioDataEvent event) {
+		bnkSegTrks = (EvioDataBank) event.getBank("TimeBasedTrkg::TBSegmentTrajectory");
+		for (int i = 0; i < bnkSegTrks.rows(); i++) {
+			// First getting all the values of each variables of the current
+			// bank
+			int superlayer = bnkSegTrks.getInt("superlayer", i);
+			int layer = bnkSegTrks.getInt("layer", i);
+			int segmentID = bnkSegTrks.getInt("segmentID", i);
+			int matchedHitID = bnkSegTrks.getInt("matchedHitID", i);
+			double trkDoca = bnkSegTrks.getDouble("trkDoca", i);
+			double dMax = wpdist[superlayer - 1];
+			double NtrkDoca = trkDoca / dMax; // 6/12/16
+			Integer gWire = wireMapTBHits.get(new Integer(matchedHitID));
+			Double gSegmAvgWire = gSegmAvgWireTBSegments.get(new Integer(matchedHitID));
+			Double gFitChisqProb = gFitChisqProbTBSegments.get(new Integer(matchedHitID));
+
+			if (gWire == null || gSegmAvgWire == null || gFitChisqProb == null)
+				continue;
+			h1trkDoca2Dar.get(new Coordinate(superlayer - 1, 0)).fill(trkDoca);
+			h1NtrkDoca2Dar.get(new Coordinate(superlayer - 1, 0)).fill(NtrkDoca);
+			h1NtrkDocaP2Dar.get(new Coordinate(superlayer - 1, 0)).fill(Math.abs(NtrkDoca));
+
+			if (matchedHitID == -1) {
+				h1trkDoca2Dar.get(new Coordinate(superlayer - 1, 1)).fill(trkDoca);
+				h1NtrkDoca2Dar.get(new Coordinate(superlayer - 1, 1)).fill(NtrkDoca);
+				h1NtrkDocaP2Dar.get(new Coordinate(superlayer - 1, 1)).fill(Math.abs(NtrkDoca));
+			}
+			if (matchedHitID == -1) {
+				h1trkDoca2Dar.get(new Coordinate(superlayer - 1, 2)).fill(trkDoca);
+				h1NtrkDoca2Dar.get(new Coordinate(superlayer - 1, 2)).fill(NtrkDoca);
+				h1NtrkDocaP2Dar.get(new Coordinate(superlayer - 1, 2)).fill(Math.abs(NtrkDoca));
+			}
+			h1trkDoca3Dar.get(new Coordinate(superlayer - 1, layer - 1, 0)).fill(trkDoca);
+			h1NtrkDoca3Dar.get(new Coordinate(superlayer - 1, layer - 1, 0)).fill(NtrkDoca);
+			h1NtrkDocaP3Dar.get(new Coordinate(superlayer - 1, layer - 1, 0)).fill(Math.abs(NtrkDoca));
+
+			if (matchedHitID == -1) {
+				h1trkDoca3Dar.get(new Coordinate(superlayer - 1, layer - 1, 1)).fill(trkDoca);
+				h1NtrkDoca3Dar.get(new Coordinate(superlayer - 1, layer - 1, 1)).fill(NtrkDoca);
+				h1NtrkDocaP3Dar.get(new Coordinate(superlayer - 1, layer - 1, 1)).fill(Math.abs(NtrkDoca));
+			}
+			if (matchedHitID == -1) {
+				h1trkDoca3Dar.get(new Coordinate(superlayer - 1, layer - 1, 2)).fill(trkDoca);
+				h1NtrkDoca3Dar.get(new Coordinate(superlayer - 1, layer - 1, 2)).fill(NtrkDoca);
+				h1NtrkDocaP3Dar.get(new Coordinate(superlayer - 1, layer - 1, 2)).fill(Math.abs(NtrkDoca));
+			}
+			int gSegmThBin = gSegmThBinMapTBSegments.get(new Integer(segmentID));
+
+			if (segmentID > -1 && gSegmThBin > -1) {
+				h1trkDoca4Dar.get(new Coordinate(superlayer - 1, layer - 1, gSegmThBin, 0)).fill(trkDoca);
+				if (matchedHitID == -1)
+					h1trkDoca4Dar.get(new Coordinate(superlayer - 1, layer - 1, gSegmThBin, 1)).fill(trkDoca);
+				if (matchedHitID == -1)
+					h1trkDoca4Dar.get(new Coordinate(superlayer - 1, layer - 1, gSegmThBin, 2)).fill(trkDoca);
+				if (matchedHitID > -1)
+					h1wire4Dar.get(new Coordinate(superlayer - 1, layer - 1, gSegmThBin, 0)).fill(gWire);
+				h1avgWire4Dar.get(new Coordinate(superlayer - 1, layer - 1, gSegmThBin, 0)).fill(gSegmAvgWire);
+				h1fitChisqProbSeg4Dar.get(new Coordinate(superlayer - 1, layer - 1, gSegmThBin, 0)).fill(gFitChisqProb);
+				if (matchedHitID == -1) {
+					h1avgWire4Dar.get(new Coordinate(superlayer - 1, layer - 1, gSegmThBin, 1)).fill(gSegmAvgWire);
+					h1fitChisqProbSeg4Dar.get(new Coordinate(superlayer - 1, layer - 1, gSegmThBin, 1)).fill(gFitChisqProb);
+				}
+			}
+		}
+	}
+
 	protected void drawHistograms() {
 		createCanvas();
+		String imgNm;
+		profileX = new GraphErrors[nSL][2]; // 2 for 2 theta bins 0, 30 h2timeVtrkDoca.getProfileX();
+		profileY = new GraphErrors[nSL][2]; // 2 for 2 theta bins 0, 30 h2timeVtrkDoca.getProfileY();
+
+		for (int i = 0; i < nSL; i++) {
+			for (int j = 0; j < 2; j++) { // 2 thet bins +/-1 deg around 0 and 30 deg
+				profileX[i][j] = h2timeVtrkDoca.get(new Coordinate(i, j)).getProfileX();
+				profileY[i][j] = h2timeVtrkDoca.get(new Coordinate(i, j)).getProfileY();
+				c0.cd(i * 2 + j);
+				c0.draw(h2timeVtrkDoca.get(new Coordinate(i, j)));
+				c0.cd(i * 2 + j + 4);
+				c0.draw(profileX[i][j]);
+				c0.cd(i * 2 + j + 8);
+				c0.draw(profileY[i][j]);
+			}
+		}
+		imgNm = "src/images/OldtimeVsTrkDoca_and_Profiles.png";
+		c0.save(imgNm);
+
+		c01.cd(0);
+		c01.draw(h2timeVtrkDoca.get(new Coordinate(0, 0)));
+		c01.cd(1);
+		c01.draw(profileX[0][0]);
+		imgNm = "src/images/OldtimeVsTrkDoca_and_Profiles2.png";
+		c01.save(imgNm);
+
+		profileXvz = new GraphErrors[nSectors][nSL][nThBinsVz];
+
 		for (int i = 0; i < nSectors; i++) {
 			for (int j = 0; j < nSL; j++) {
 				for (int k = 0; k < nThBinsVz; k++) {
+					profileXvz[i][j][k] = h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX();
 					htime2DisDocaProfile.put(new Coordinate(i, j, k), h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX());
 					htime2DisDocaProfile.get(new Coordinate(i, j, k)).setTitle("Sector " + i + " timeVtrkDocaS " + j + " Th" + k);
+					mapOfFitFunctions.put(new Coordinate(i, j, k),
+					        new DCFitFunction(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX(), j, k, isLinearFit));
 				}
 			}
 		}
 
 		// Lets Run the Fitter
-		runFitter();
+		// runFitter();
+		for (int Sector = 0; Sector < nSectors; Sector++) {
+			for (int SL = 0; SL < nSL; SL++) {
+				runFitter(Sector, SL);
+			}
+		}
 		// Done running fitter
-		// lets create lines we just fit
-		createFitLines();
+
+		for (int j = 0; j < nThBinsVz; j++) { // Row #
+			c03.cd(j * 4 + 0);
+			c03.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, 0, j))); // c0.draw(profileX[i][j],"same");
+			c03.cd(j * 4 + 1);
+			c03.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, 1, j))); // c0.draw(profileX[i][j],"same");
+			c03.cd(j * 4 + 2);
+			c03.draw(profileXvz[0][0][j]);
+			c03.cd(j * 4 + 3);
+			c03.draw(profileXvz[0][1][j]);
+		}
+		imgNm = "src/images/OldtimeVsTrkDoca_and_ProfilesVZ.png";
+		c03.save(imgNm);
+
+		double[] pars4FitLineTmp = new double[4];
+		calibFnToDraw_withGROOT[][][] myFitLinesGroot = new calibFnToDraw_withGROOT[nSectors][nSL][nThBinsVz];
+		for (int i = 0; i < nSectors; i++) {
+			for (int j = 0; j < nSL; j++) {
+
+				for (int iPar = 0; iPar < 4; iPar++)
+					pars4FitLineTmp[iPar] = pars4FitLine[i][j][iPar];
+
+				for (int k = 0; k < nThBinsVz; k++) {
+					String hNm = String.format("myFitLinesS%dTh%d", i + 1, j);
+					myFitLinesGroot[i][j][k] = new calibFnToDraw_withGROOT(hNm, 0.0, 1.0, i, j, k, isLinearFit);
+					myFitLinesGroot[i][j][k].setLineColor(2);
+					myFitLinesGroot[i][j][k].setLineWidth(3);
+					myFitLinesGroot[i][j][k].setLineStyle(4);
+					// pars4FitLine[5] = 1.0 * (i + 1);
+					// pars4FitLine[6] = 0.5 * (thEdgeVzL[j] + thEdgeVzH[j]);
+					// pars4FitLine[7] = 2.0 * wpdist[i];
+
+					myFitLinesGroot[i][j][k].setParameters(pars4FitLineTmp);
+					System.out.println("Groot f(0/0.5/1.0) = " + myFitLinesGroot[i][j][k].evaluate(0.0) + ", "
+					        + myFitLinesGroot[i][j][k].evaluate(0.5) + ", " + myFitLinesGroot[i][j][k].evaluate(1.0));
+
+				}
+			}
+		}
+
+		for (int k = 0; k < nThBinsVz; k++) {
+			c06.cd(k * 4 + 0);
+			c06.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, 0, k)));
+			c06.draw(myFitLinesGroot[0][0][k], "same");
+			c06.cd(k * 4 + 1);
+			c06.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, 1, k)));
+			c06.draw(myFitLinesGroot[0][1][k], "same");
+			c06.cd(k * 4 + 2);
+			c06.draw(profileXvz[0][0][k]);
+			c06.draw(myFitLinesGroot[0][0][k], "same");
+			c06.cd(k * 4 + 3);
+			c06.draw(profileXvz[0][1][k]);
+			c06.draw(myFitLinesGroot[0][1][k], "same");
+		}
+		imgNm = "src/images/OldmyTestFitFunctionAllThBins_wdGroot.png";
+		c06.save(imgNm);
 		int canvasPlace = 0;
 		for (int j = 0; j < nSL; j++) {
 			for (int k = 0; k < nThBinsVz; k++) {
@@ -495,64 +629,36 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 				sector5.cd(canvasPlace);
 				sector6.cd(canvasPlace);
 
-				sector1.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j, k)));
-				// sector1.draw(mapOfFitLines.get(new Coordinate(0, j, k)), "same");
-				sector2.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j, k)));
-				// sector2.draw(mapOfFitLines.get(new Coordinate(1, j, k)), "same");
-				sector3.draw(h2timeVtrkDocaVZ.get(new Coordinate(2, j, k)));
-				// sector3.draw(mapOfFitLines.get(new Coordinate(2, j, k)), "same");
-				sector4.draw(h2timeVtrkDocaVZ.get(new Coordinate(3, j, k)));
-				// sector4.draw(mapOfFitLines.get(new Coordinate(3, j, k)), "same");
-				sector5.draw(h2timeVtrkDocaVZ.get(new Coordinate(4, j, k)));
-				// sector5.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
-				sector6.draw(h2timeVtrkDocaVZ.get(new Coordinate(5, j, k)));
-				// sector6.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
-
-				sector1Profiles.cd(canvasPlace);
-				sector2Profiles.cd(canvasPlace);
-				sector3Profiles.cd(canvasPlace);
-				sector4Profiles.cd(canvasPlace);
-				sector5Profiles.cd(canvasPlace);
-				sector6Profiles.cd(canvasPlace);
-
-				sector1Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j, k)).getProfileX());
-				sector1Profiles.draw(mapOfFitLines.get(new Coordinate(0, j, k)), "same");
-				sector2Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j, k)).getProfileX());
-				sector2Profiles.draw(mapOfFitLines.get(new Coordinate(1, j, k)), "same");
-				sector3Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(2, j, k)).getProfileX());
-				sector3Profiles.draw(mapOfFitLines.get(new Coordinate(2, j, k)), "same");
-				sector4Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(3, j, k)).getProfileX());
-				sector4Profiles.draw(mapOfFitLines.get(new Coordinate(3, j, k)), "same");
-				sector5Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(4, j, k)).getProfileX());
-				sector5Profiles.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
-				sector6Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(5, j, k)).getProfileX());
-				sector6Profiles.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
-
 				canvasPlace++;
 
+				sector1.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j, k)));
+				sector1.draw(myFitLinesGroot[0][j][k], "same");
+				sector2.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j, k)));
+				sector2.draw(myFitLinesGroot[1][j][k], "same");
+				sector3.draw(h2timeVtrkDocaVZ.get(new Coordinate(2, j, k)));
+				sector3.draw(myFitLinesGroot[2][j][k], "same");
+				sector4.draw(h2timeVtrkDocaVZ.get(new Coordinate(3, j, k)));
+				sector4.draw(myFitLinesGroot[3][j][k], "same");
+				sector5.draw(h2timeVtrkDocaVZ.get(new Coordinate(4, j, k)));
+				sector5.draw(myFitLinesGroot[4][j][k], "same");
+				sector6.draw(h2timeVtrkDocaVZ.get(new Coordinate(5, j, k)));
+				sector6.draw(myFitLinesGroot[5][j][k], "same");
 			}
 		}
-		sector1.save("src/images/sector1.png");
-		sector2.save("src/images/sector2.png");
-		sector3.save("src/images/sector3.png");
-		sector4.save("src/images/sector4.png");
-		sector5.save("src/images/sector5.png");
-		sector6.save("src/images/sector6.png");
-
-		sector1Profiles.save("src/images/sector1Profiles.png");
-		sector2Profiles.save("src/images/sector2Profiles.png");
-		sector3Profiles.save("src/images/sector3Profiles.png");
-		sector4Profiles.save("src/images/sector4Profiles.png");
-		sector5Profiles.save("src/images/sector5Profiles.png");
-		sector6Profiles.save("src/images/sector6Profiles.png");
+		sector1.save("src/images/Oldsector1.png");
+		sector2.save("src/images/Oldsector2.png");
+		sector3.save("src/images/Oldsector3.png");
+		sector4.save("src/images/Oldsector4.png");
+		sector5.save("src/images/Oldsector5.png");
+		sector6.save("src/images/Oldsector6.png");
+		// 10/4/16: Trying to make plot of residuals for each superlayer
+		H1F[] h1Residual = new H1F[nSL];
+		for (int i = 0; i < nSL; i++) {
+			String hNm = String.format("ResidualS%d", i);
+			h1Residual[i] = new H1F(hNm, 200, -1.0, 1.0);
+		}
 		// lets add the canvas's to the pane and draw it.
 		addToPane();
-
-		// this is temp for testHist
-		EmbeddedCanvas test = new EmbeddedCanvas();
-		test.cd(0);
-		test.draw(testHist);
-		test.save("src/images/test.png");
 	}
 
 	protected void addToPane() {
@@ -567,7 +673,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
 	}
 
-	public void runFitter() {
+	public void runFitter(int Sector, int SL) {
 
 		final int nFreePars = 4;
 
@@ -576,77 +682,48 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 };
 
 		// Now start minimization
+		KrishnaFcn theFCN = new KrishnaFcn(Sector, SL, nThBinsVz, profileXvz, isLinearFit);
+		// now lets create the neede amount of objects of the DCFitfunction
+		Map<Coordinate, DCFitFunction> mapOfFitFunctions = new HashMap<Coordinate, DCFitFunction>();
+
+		MnUserParameters upar = new MnUserParameters();
 		double parSteps[] = { 0.00001, 0.001, 0.01, 0.01, 0.0001 };
 		double pLow[] = { prevFitPars[0] * 0.4, prevFitPars[1] * 0.0, prevFitPars[2] * 0.4, prevFitPars[3] * 0.4, prevFitPars[4] * 0.0 };
 		double pHigh[] = { prevFitPars[0] * 1.6, prevFitPars[1] * 5.0, prevFitPars[2] * 1.6, prevFitPars[3] * 1.6, prevFitPars[4] * 1.6 };
-		Map<Coordinate, MnUserParameters> mapTmpUserFitParameters = new HashMap<Coordinate, MnUserParameters>();
-
-		for (int i = 0; i < nSectors; i++) {
-			for (int j = 0; j < nSL; j++) {
-				for (int k = 0; k < nThBinsVz; k++) {
-					mapOfFitFunctions.put(new Coordinate(i, j, k),
-					        new DCFitFunction(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX(), j, k, isLinearFit));
-					mapOfFitParameters.put(new Coordinate(i, j, k), new MnUserParameters());
-					for (int p = 0; p < nFreePars; p++) {
-						mapOfFitParameters.get(new Coordinate(i, j, k)).add(parName[p], prevFitPars[p], parSteps[p], pLow[p], pHigh[p]);
-					}
-					mapOfFitParameters.get(new Coordinate(i, j, k)).setValue(2, tMaxSL[j]);// tMax for SLth superlayer
-					mapOfFitParameters.get(new Coordinate(i, j, k)).fix(2);
-					MnMigrad migrad =
-					        new MnMigrad(mapOfFitFunctions.get(new Coordinate(i, j, k)), mapOfFitParameters.get(new Coordinate(i, j, k)));
-					FunctionMinimum min = migrad.minimize();
-
-					if (!min.isValid()) {
-						// try with higher strategy
-						System.out.println("FM is invalid, try with strategy = 2.");
-						MnMigrad migrad2 = new MnMigrad(mapOfFitFunctions.get(new Coordinate(i, j, k)), min.userState(), new MnStrategy(2));
-						min = migrad2.minimize();
-					}
-					mapTmpUserFitParameters.put(new Coordinate(i, j, k), min.userParameters());
-					double[] fPars = new double[nFreePars];
-					double[] fErrs = new double[nFreePars];
-					for (int p = 0; p < nFreePars; p++) {
-						fPars[p] = mapTmpUserFitParameters.get(new Coordinate(i, j, k)).value(parName[p]);
-						fErrs[p] = mapTmpUserFitParameters.get(new Coordinate(i, j, k)).error(parName[p]);
-					}
-					mapOfUserFitParameters.put(new Coordinate(i, j, k), fPars);
-				} // end of nThBinsVz loop
-			} // end of superlayer loop
-		} // end of sector loop
-
-	}
-
-	private void createFitLines() {
-		for (int i = 0; i < nSectors; i++) {
-			for (int j = 0; j < nSL; j++) {
-				for (int k = 0; k < nThBinsVz; k++) {
-					String title = "Sector " + i + " timeVtrkDocaS " + j + " Th" + k;
-					double maxFitValue = h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getDataX(getMaximumFitValue(i, j, k));
-					mapOfFitLines.put(new Coordinate(i, j, k), new DCFitDrawer(title, 0.0, 1.0, j, k, isLinearFit));
-					mapOfFitLines.get(new Coordinate(i, j, k)).setLineColor(2);
-					mapOfFitLines.get(new Coordinate(i, j, k)).setLineWidth(3);
-					mapOfFitLines.get(new Coordinate(i, j, k)).setLineStyle(4);
-					mapOfFitLines.get(new Coordinate(i, j, k)).setParameters(mapOfUserFitParameters.get(new Coordinate(i, j, k)));
-				}
-			}
+		for (int p = 0; p < nFreePars; p++) {
+			upar.add(parName[p], prevFitPars[p], parSteps[p], pLow[p], pHigh[p]);
 		}
 
-	}
+		upar.setValue(2, tMaxSL[SL]);// 155.0); //tMax for SLth superlayer
+		upar.fix(2); // fixed for now.
 
-	public int getMaximumFitValue(int i, int j, int k) {
-		int maxOutput = 0;
-		int nX = h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getXAxis().getNBins();
-		int nY = h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getYAxis().getNBins();
-		double[][] mybuff = h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getContentBuffer();
-		for (int iX = 0; iX < nX; iX++) {
-			for (int iY = 0; iY < nY; iY++) {
-				if (mybuff[iX][iY] != 0.0) {
-					maxOutput = iX;
-				}
-			}
+		System.out.println("Initial parameters: " + upar);
+
+		System.out.println("start migrad");
+		MnMigrad migrad = new MnMigrad(theFCN, upar);
+		FunctionMinimum min = migrad.minimize();
+
+		if (!min.isValid()) {
+			// try with higher strategy
+			System.out.println("FM is invalid, try with strategy = 2.");
+			MnMigrad migrad2 = new MnMigrad(theFCN, min.userState(), new MnStrategy(2));
+			min = migrad2.minimize();
 		}
-		return maxOutput;
 
+		MnUserParameters userpar = min.userParameters();
+		for (int p = 0; p < nFreePars; p++)
+			System.out.println(parName[p] + " = " + userpar.value(parName[p]) + " +/- " + userpar.error(parName[p]));
+		double[] fPars = new double[nFreePars], fErrs = new double[nFreePars];
+
+		for (int p = 0; p < nFreePars; p++) {
+			fPars[p] = userpar.value(parName[p]);
+			fErrs[p] = userpar.error(parName[p]);
+		}
+		for (int i = 0; i < nFreePars; i++)
+			pars4FitLine[Sector][SL][i] = fPars[i];
+		// pars4FitLine[5] = 1.0;
+		// pars4FitLine[6] = 0.0;
+		// pars4FitLine[7] = 0.3861;
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -692,28 +769,22 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_2.evio");
 		// fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_4.evio");
 
-		fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_1.evio");
-		fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_10.evio");
-		fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_2.evio");
-		fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_4.evio");
+		fileArray.add(
+		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio");
+		fileArray.add(
+		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.3.evio");
 
-		// fileArray.add(fileName);
-		// fileArray.add(
-		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio");
-		// fileArray.add(
-		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.3.evio");
-		//
-		// fileArray.add(
-		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.4.evio");
-		//
-		// fileArray.add(
-		// "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.5.evio");
+		fileArray.add(
+		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.4.evio");
 
-		TimeToDistanceFitter rd = new TimeToDistanceFitter(fileArray, true);
+		fileArray.add(
+		        "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.5.evio");
+
+		OldTimeToDistanceFitter rd = new OldTimeToDistanceFitter(fileArray, true);
 
 		rd.processData();
-		// System.out.println(rd.getMaximumFitValue(5, 5, 5) + " output");
 		rd.drawHistograms();
 
 	}
+
 }
