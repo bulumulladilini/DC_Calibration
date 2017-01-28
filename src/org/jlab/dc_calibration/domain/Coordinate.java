@@ -56,39 +56,46 @@ public class Coordinate {
 		trial.put(new Coordinate(1, 1), new H1F("h" + 1, "", 50, 0, 2.0 * Math.PI));
 		trial.put(new Coordinate(2, 1), new H1F("h" + 2, "", 50, 0, 2.0 * Math.PI));
 		trial.put(new Coordinate(1, 1, 1, 1, 1, 1), new H1F("h1111" + 1, "", 50, 0, 2.0 * Math.PI));
+		trial.put(new Coordinate(1, 1, 1), new H1F("h11" + 1, "", 50, 0, 2.0 * Math.PI));
 
 		F1D func = new F1D("func", "2.0+[a]*cos(x)+[b]*cos(2*x)", 0.0, 2.0 * 3.1415);
 		F1D func2 = new F1D("func2", "2.0+[a]*sin(x)+[b]*sin(2*x)", 0.0, 2.0 * 3.1415);
 		F1D func3 = new F1D("func3", "2.0+[a]*sin(x)", 0.0, 2.0 * 3.1415);
+		F1D func4 = new F1D("func4", "2.0+[a]*cos(x)", 0.0, 2.0 * 3.1415);
 
 		func.setParameter(0, 0.5);
 		func.setParameter(1, 1.0);
 		func2.setParameter(0, 0.5);
 		func2.setParameter(1, 1.0);
 		func3.setParameter(0, 0.5);
+		func4.setParameter(0, 0.5);
 		RandomFunc randfunc = new RandomFunc(func);
 		RandomFunc randfunc2 = new RandomFunc(func2);
 		RandomFunc randfunc3 = new RandomFunc(func3);
+		RandomFunc randfunc4 = new RandomFunc(func4);
 
 		for (int i = 0; i < 1800; i++) {
 			trial.get(new Coordinate(1, 1)).fill(randfunc.random());
 			trial.get(new Coordinate(2, 1)).fill(randfunc2.random());
 			trial.get(new Coordinate(1, 1, 1, 1, 1, 1)).fill(randfunc3.random());
-
+			trial.get(new Coordinate(1, 1, 1)).fill(randfunc4.random());
 		}
 
 		trial.get(new Coordinate(1, 1)).setTitleX("First");
 		trial.get(new Coordinate(2, 1)).setTitleX("Second");
 		trial.get(new Coordinate(1, 1, 1, 1, 1, 1)).setTitleX("Third");
+                trial.get(new Coordinate(1, 1, 1)).setTitleX("Fourth");
 
 		TCanvas c1 = new TCanvas("c1", 800, 800);
-		c1.divide(1, 3);
+		c1.divide(2, 2);
 		c1.cd(0);
 		c1.draw(trial.get(new Coordinate(1, 1)));
 		c1.cd(1);
 		c1.draw(trial.get(new Coordinate(2, 1)));
 		c1.cd(2);
 		c1.draw(trial.get(new Coordinate(1, 1, 1, 1, 1, 1)));
+		c1.cd(3);
+		c1.draw(trial.get(new Coordinate(1, 1, 1)));
 
 	}
 

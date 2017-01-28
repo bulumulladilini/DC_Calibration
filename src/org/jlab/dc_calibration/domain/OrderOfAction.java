@@ -26,9 +26,10 @@ public class OrderOfAction {
 		isbuttonPending = new int[NButtons];
 		JFrame frame = new JFrame("Message explaining the color coding");
 		String pt1 = "<html><body width='";
-		String pt2 = "'><h1>Please check button color coding:</h1>" + "<p> Red: Button is not active - do NOT select<br><br> "
-		        + "<p> Blue: Button is active - please select to continue<br><br>"
-		        + "<p> Green: Button was active - and action has been performed<br><br> " + "";
+		String pt2 = "'><h1>Please select a radio button & <br> then check button color coding:</h1>" 
+                        + "<p> <font color='red'>Red:</font> Button is not active - do NOT select<br><br> "
+		        + "<p> <font color='blue'>Blue:</font> Button is active - please select to continue<br><br>"
+		        + "<p> <font color='green'>Green:</font> Button was active - and action has been performed<br><br> " + "";
 		String pall = pt1 + pt2;
 		JOptionPane.showMessageDialog(frame, pall);
 
