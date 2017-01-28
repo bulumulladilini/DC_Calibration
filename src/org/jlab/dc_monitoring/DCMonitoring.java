@@ -430,7 +430,6 @@ public class DCMonitoring {
 		chain.open(fileName);
 		fileName = "/Users/omcortes/jlab/recook_108.hipo";
 		chain.open(fileName);
-
 		DCMonitoring test = new DCMonitoring(chain);
 
 	}
