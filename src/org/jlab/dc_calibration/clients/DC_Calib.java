@@ -7,7 +7,7 @@
  *    / X MK X /`-------'
  *   / X MK X /
  *  / X MK X /
- * (________(                @author m.c.kunkel
+ * (________(                @author m.c.kunkel, kpadhikari
  *  `------'
  */
  /*
@@ -19,6 +19,7 @@ package org.jlab.dc_calibration.clients;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -28,8 +29,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PrintStream;
@@ -41,9 +44,11 @@ import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JRadioButton;
@@ -55,8 +60,13 @@ import javax.swing.text.DefaultCaret;
 import javax.swing.text.DefaultEditorKit;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.TextAction;
+import org.jlab.dc_calibration.domain.DialogForRec;
+import org.jlab.dc_calibration.domain.DialogForT0cor;
+import org.jlab.dc_calibration.domain.DialogFor_tvsxCCDBwriter;
+import org.jlab.dc_calibration.domain.EstimateT0correction;
 
 import org.jlab.dc_calibration.domain.OrderOfAction;
+import org.jlab.dc_calibration.domain.RunReconstructionCoatjava4;
 import org.jlab.dc_calibration.domain.TimeToDistanceFitter;
 
 public class DC_Calib extends WindowAdapter implements WindowListener, ActionListener, Runnable {
@@ -89,7 +99,8 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
     // file to be read and analyzed
     private String fileName;
     // buttons to be implemented
-    JButton bFileChooser, bTestEvent, bReadRecDataIn, bReconstruction, bTimeToDistance, ccdbWriter, buttonClear;
+    JButton bT0Correction;
+    JButton bFileChooser, bTestEvent, bReadRecDataIn, bReconstruction, bTimeToDistance, bCCDBwriter, buttonClear;
     Dimension frameSize;
     OrderOfAction OA = null;
 
@@ -136,20 +147,22 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 
     private void createButtons() {
         bFileChooser = new JButton("Choose File", createImageIcon("/images/Open16.gif"));
+        bT0Correction = new JButton();
         bTestEvent = new JButton();
         bReadRecDataIn = new JButton();
         bReconstruction = new JButton();
         bTimeToDistance = new JButton();
-        ccdbWriter = new JButton();
+        bCCDBwriter = new JButton();
         buttonClear = new JButton("Clear");
 
         bTestEvent.setText("<html>" + "&emsp; &emsp; TestButton " + "<br>" + " Needs to be removed" + "</html>");
+        bT0Correction.setText("<html>" + "Estimate T0s");
         bReadRecDataIn.setText("<html>" + "Run Decoder" + "</html>");
         bReconstruction.setText("<html>" + "Run Reconstruction" + "</html>");
         bTimeToDistance.setText("<html>" + "Run Time vs. Distance Fitter" + "</html>");
-        ccdbWriter.setText("<html>" + "Send Results to CCDB" + "</html>");
+        bCCDBwriter.setText("<html>" + "Load xvst pars to CCDB" + "</html>");
 
-        bReconstruction.setPreferredSize(new Dimension(frameSize.width / 3, frameSize.height / 3));
+        //bReconstruction.setPreferredSize(new Dimension(frameSize.width / 3, frameSize.height / 3));
         bTimeToDistance.setPreferredSize(new Dimension(frameSize.width / 3, frameSize.height / 3));
 
     }
@@ -162,9 +175,12 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         panelForVariousControls.setBorder(BorderFactory.createEtchedBorder());
         //addToOpenFilePanel(); //Moved below
         radioPanel = new JPanel(new GridLayout(0, 1));
+        addToT0CorButton();
+        addToRecoButton();
         addToRadioPanel();
         addToOpenFilePanel();//add File-chooser, radio panel etc to the control panel
-
+        addToCCDBwriterButton(); //CCDB writer for tvsx parameters
+        
         panelForWelcomeAndOpenFile = new JPanel(new BorderLayout());
         addToWelcomePanel();
 
@@ -185,12 +201,28 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         bannerPanel.add(banner, BorderLayout.CENTER);
     }
 
-    private void addToOpenFilePanel() {
-        panelForVariousControls.add(radioPanel, BorderLayout.LINE_START);
-        //panelForVariousControls.add(bFileChooser, BorderLayout.CENTER);
+    private void addToOpenFilePanel() {  
+        
+        //Pack bRec & radioPanel into subpanel1 //& add to the main panel @ start
         JPanel subControlPanel1 = new JPanel(new BorderLayout());
-        subControlPanel1.add(bFileChooser, BorderLayout.LINE_START);
-        panelForVariousControls.add(subControlPanel1, BorderLayout.CENTER);
+        subControlPanel1.add(bReconstruction, BorderLayout.LINE_START);
+        subControlPanel1.add(radioPanel, BorderLayout.CENTER);
+        //panelForVariousControls.add(subControlPanel1, BorderLayout.LINE_START);
+        
+        //Pack bT0Correction & subControlPanel1 into subpanel0 & add to the main panel @ start
+        JPanel subControlPanel0 = new JPanel(new BorderLayout());
+        subControlPanel0.add(bT0Correction, BorderLayout.LINE_START);
+        subControlPanel0.add(subControlPanel1, BorderLayout.CENTER);
+        panelForVariousControls.add(subControlPanel0, BorderLayout.LINE_START);        
+        
+        
+     
+        //Pack bFileChooser to another subpanel & add it to center of main Panel
+        JPanel subControlPanel2 = new JPanel(new BorderLayout());
+        subControlPanel2.add(bFileChooser, BorderLayout.LINE_START);
+        panelForVariousControls.add(subControlPanel2, BorderLayout.CENTER);
+        
+        panelForVariousControls.add(bCCDBwriter, BorderLayout.LINE_END);
     }
 
     private void addToWelcomePanel() {
@@ -213,13 +245,145 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         JLabel imgLabel = new JLabel(imageIcon);
         panelImg.add(imgLabel, BorderLayout.CENTER);
     }
+    
+    private void addToT0CorButton() {
+            bT0Correction.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
 
+                String choice = ae.getActionCommand();
+                if (choice.equals("Quit")) {
+                    System.exit(0);
+                }   
+                else {
+                    createDialogForT0Correction();
+                }
+            }
+        });        
+    }
+    private void addToCCDBwriterButton() {
+            bCCDBwriter.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+
+                String choice = ae.getActionCommand();
+                if (choice.equals("Quit")) {
+                    System.exit(0);
+                } else {
+                    
+                    createDialogForTvsX_CCDBwriter();                    
+                }
+            }
+        });        
+    }
+    
+    private void addToRecoButton() {
+        bReconstruction.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                System.out.println("Reconstruction Button has been hit..");
+                //createDialogForRecControls();
+                //RunReconstructionCoatjava4 rec = new RunReconstructionCoatjava4();
+                String choice = ae.getActionCommand();
+                if (choice.equals("Quit")) {
+                    System.exit(0);
+                } //else if (choice.equals("Enter data")) {
+                else {
+                    createDialogForRecControls();
+                }
+            }
+        });
+    }
+ 
+    private void createDialogForTvsX_CCDBwriter() {
+        DialogFor_tvsxCCDBwriter dlg = new DialogFor_tvsxCCDBwriter(frame);
+        String[] results = dlg.run();
+        ArrayList<String> fileArray = dlg.getFileArray();
+        if (results[0] != null) {
+            
+            String s = null;
+            String command = null;
+
+            try {
+                System.out.println("File to be uploaded: " + results[0]
+                        + "\nComments to be added: '" + results[1] + "'");
+                //Process p = Runtime.getRuntime().exec("pwd");
+                
+                command = String.format("./src/files/loadFitParsToCCDB.csh %s '%s'", results[0],results[1]);
+                System.out.println("The following command is being executed: \n " + command);
+                command = "./src/files/justEchoHello.sh";
+                Process p = Runtime.getRuntime().exec(command);
+                BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+                // read the output from the command
+                //System.out.println("Here is the standard output of the command:\n");
+                while ((s = stdInput.readLine()) != null) {
+                    System.out.println(s);
+                }
+
+                // read any errors from the attempted command
+                //System.out.println("Here is the standard error of the command (if any):\n");
+                while ((s = stdError.readLine()) != null) {
+                    System.out.println(s);
+                }
+
+                System.exit(0);
+            } catch (IOException e) {
+                System.out.println("exception happened - here's what I know: ");
+                e.printStackTrace();
+                System.exit(-1);
+            }
+        }
+    }
+    
+    private void createDialogForT0Correction() {
+        //DialogForRec dlg = new DialogForRec(frame);
+        DialogForT0cor dlg = new DialogForT0cor(frame);
+        String[] results = dlg.run();
+        ArrayList<String> fileArray = dlg.getFileArray();
+        if (results[0] != null) {
+            JOptionPane.showMessageDialog(frame,
+                    "Input file: " + results[0] + "\nOutput file: " + results[1]); 
+            
+                    System.out.println("Debug 0");
+            EstimateT0correction t0c = new EstimateT0correction(results, fileArray);
+            t0c.DrawPlots(); 
+            t0c.DrawPlotsForAllCables();
+            t0c.DrawPlotsForTMaxAllCables();
+            System.out.println("Finished drawing the T0 plots ..");
+        }
+    }    
+    
+    private void chooseInputFiles(JFileChooser iFC, ActionEvent evt) {
+        iFC.setMultiSelectionEnabled(true);
+        iFC.showOpenDialog(null);
+        fileList = iFC.getSelectedFiles();
+        fileArray = new ArrayList<String>();
+        for (File file : fileList) {
+            System.out.println("Ready to read file " + file);
+            fileArray.add(file.toString());
+        }
+    }
+    
+    private void createDialogForRecControls() {
+        DialogForRec dlg = new DialogForRec(frame);
+        String[] results = dlg.run();
+        if (results[0] != null) {
+            JOptionPane.showMessageDialog(frame,
+                    "Input file: " + results[0] + "\nOutput file: " + results[1]); 
+            
+            //Now make RunReconstructionCoatjava4() take results as input arg & control IP & OP files
+            RunReconstructionCoatjava4 rec = new RunReconstructionCoatjava4(results);
+        }
+    }
+    
     private void addToButtonPanel() {
         // buttonPanel.add(bTestEvent);
         // buttonPanel.add(bReadRecDataIn);
-        // buttonPanel.add(bReconstruction);
+        //buttonPanel.add(bReconstruction);
         buttonPanel.add(bTimeToDistance);
-        // buttonPanel.add(ccdbWriter);
+        //buttonPanel.add(bCCDBwriter);
         OrderOfAction(2); // this int in OrderOfAction is the number of buttons activated in this method
     }
 
@@ -242,17 +406,18 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         centerPanel.add(buttonPanel, BorderLayout.CENTER);
         centerPanel.add(Box.createVerticalGlue(), BorderLayout.SOUTH);
 
-        JScrollPane scroll = new JScrollPane(textArea);
+        JScrollPane scroll = new JScrollPane (textArea, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
+                JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);        
+        //JScrollPane scroll = new JScrollPane(textArea);
         scroll.setPreferredSize(new Dimension((int) (width / 2), (int) (height / 2)));
-        scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        centerPanel.add(scroll, BorderLayout.EAST);
-
+        //scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        centerPanel.add(scroll, BorderLayout.EAST);        
     }
 
     private void addToTextArea() {
         textArea = new JTextArea();
         textArea.setEditable(false);
-        textArea.setLineWrap(true);
+        textArea.setLineWrap(false);//(true);//this makes horizontal scroll bar to show up as well.
         textArea.setWrapStyleWord(true);
         DefaultCaret caret = (DefaultCaret) textArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
@@ -386,12 +551,11 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         });
         //listen();
     }
-
+    
     private void listen() {
         frame.addWindowListener(this);
         try {
             PipedOutputStream pout = new PipedOutputStream(this.pin);
-
             System.setOut(new PrintStream(pout, true));
         } catch (java.io.IOException io) {
             textArea.append("Couldn't redirect STDOUT to this console\n" + io.getMessage());
