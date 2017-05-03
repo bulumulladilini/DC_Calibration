@@ -7,21 +7,23 @@
  *    / X MK X /`-------'
  *   / X MK X /
  *  / X MK X /
- * (________(                @author m.c.kunkel
+ * (________(                @author m.c.kunkel, kpadhikari
  *  `------'
 */
 package org.jlab.dc_calibration.domain;
 
 import org.jlab.io.evio.EvioDataBank;
 import org.jlab.io.evio.EvioDataEvent;
+import org.jlab.io.base.DataBank;
+import org.jlab.io.base.DataEvent;
 
 public class ProcessTBTracks extends DCTBValid implements iProcessable {
 
-	private EvioDataBank bnkTrks;
-	private EvioDataEvent event;
+	private DataBank bnkTrks;
+	private DataEvent event;
 	private int nTrks;
 
-	public ProcessTBTracks(EvioDataEvent event) {
+	public ProcessTBTracks(DataEvent event) {
 		this.event = event;
 		init();
 	}
@@ -32,7 +34,7 @@ public class ProcessTBTracks extends DCTBValid implements iProcessable {
 
 	private void init() {
 		if (this.isValid()) {
-			this.bnkTrks = (EvioDataBank) event.getBank("TimeBasedTrkg::TBTracks");
+			this.bnkTrks = (DataBank) event.getBank("TimeBasedTrkg::TBTracks");
 			setNtrks();
 		} else
 			this.nTrks = 0;
@@ -48,8 +50,7 @@ public class ProcessTBTracks extends DCTBValid implements iProcessable {
 		return event.hasBank("TimeBasedTrkg::TBTracks") ? true : false;
 	}
 
-	@Override
-	public void processEvent(EvioDataEvent event) {
+	public void processEvent(DataEvent event) {
 		// TODO Auto-generated method stub
 
 	}
