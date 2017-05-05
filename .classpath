@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/Users/omcortes/jlab/coatjava/lib/clas/coat-libs-3.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="/Users/omcortes/jlab/coatjava/lib/services/clasrec-dc.jar"/>
+	<classpathentry kind="lib" path="/Users/omcortes/jlab/coatjava/lib/utils/jclara-4.3-SNAPSHOT.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
