@@ -1,6 +1,14 @@
-/*  
- @author Olga Cortes, m.c kunkel
- 
+/*  +__^_________,_________,_____,________^-.-------------------,                            (  )
+ *  | |||||||||   `--------'     |          |                   O-------------------------(  )()(  ) 
+ *  `+-------------USMC----------^----------|___________________|                            (  )
+ *    `\_,---------,---------,--------------'
+ *      / X MK X /'|       /'
+ *     / X MK X /  `\    /'
+ *    / X MK X /`-------'
+ *   / X MK X /
+ *  / X MK X /
+ * (________(                @author m.c.kunkel
+ *  `------'				 @author Olga Cortes
 */
 package org.jlab.dc_monitoring;
 
@@ -120,11 +128,11 @@ public class DCMonitoring implements IDataEventListener {
 
 			for (int j = 0; j < 3; j++) {
 				cross_yvsx.put(new Coordinate(j, i), new H2F("y vs x sector" + (i + 1) + "region" + (j + 1),
-						"sector" + (i + 1) + "region" + (j + 1), 180, -180, 180, 120, -140, 140));
+				        "sector" + (i + 1) + "region" + (j + 1), 180, -180, 180, 120, -140, 140));
 				cross_yvsx.get(new Coordinate(j, i)).setTitleX("x Sector" + (i + 1));
 				cross_yvsx.get(new Coordinate(j, i)).setTitleY("y Region" + (j + 1));
 				cross_uyvsux.put(new Coordinate(j, i),
-						new H2F("Uy vs Ux sector" + (i + 1) + "region" + (j + 1), "", 100, -1, 1, 100, -1, 1));
+				        new H2F("Uy vs Ux sector" + (i + 1) + "region" + (j + 1), "", 100, -1, 1, 100, -1, 1));
 				cross_uyvsux.get(new Coordinate(j, i)).setTitleX("Ux Sector" + (i + 1));
 				cross_uyvsux.get(new Coordinate(j, i)).setTitleY("Uy Region" + (j + 1));
 				if (j == 0) {
@@ -198,11 +206,11 @@ public class DCMonitoring implements IDataEventListener {
 
 			Ntksperevnt.put(new Coordinate(i), new H1F("tracks per sector" + (i + 1), "sector" + (i + 1), 20, 0, 20));
 			Ntksperevnt.get(new Coordinate(i)).setTitleX("Number of tracks/ evnt sector" + (i + 1));
-			Nhitspertrk.put(new Coordinate(i),
-					new H1F("hits per tracks  sector" + (i + 1), "sector" + (i + 1), 100, 0, 100));
+			Nhitspertrk.put(new Coordinate(i), new H1F("hits per tracks  sector" + (i + 1), "sector" + (i + 1), 100, 0, 100));
 			Nhitspertrk.get(new Coordinate(i)).setTitleX("Number of hits/ track sector" + (i + 1));
 			Chisqpertrck.put(new Coordinate(i),
 					new H1F("Track Chi squared sector " + (i + 1), "sector" + (i + 1), 300, 0, 100));
+
 			Chisqpertrck.get(new Coordinate(i)).setTitleX("Track  Chi squared Sector" + (i + 1));
 			Residual.put(new Coordinate(i), new H1F("Residual sector" + (i + 1), "sector" + (i + 1), 100, -1, 1));
 			Residual.get(new Coordinate(i)).setTitleX("Residual sector" + (i + 1));
@@ -212,21 +220,19 @@ public class DCMonitoring implements IDataEventListener {
 			Theta.get(new Coordinate(i)).setTitleX("Theta sector" + (i + 1));
 			Phi.put(new Coordinate(i), new H1F("Phi sector" + (i + 1), "sector" + (i + 1), 100, -Math.PI, Math.PI));
 			Phi.get(new Coordinate(i)).setTitleX("Phi sector" + (i + 1));
-			thetaVSmomenutm.put(new Coordinate(i),
-					new H2F("Theta VS p sector" + (i + 1), "sector" + (i + 1), 100, 0, 8, 100, 0, Math.PI));
+			thetaVSmomenutm.put(new Coordinate(i), new H2F("Theta VS p sector" + (i + 1), "sector" + (i + 1), 100, 0, 8, 100, 0, Math.PI));
 			thetaVSmomenutm.get(new Coordinate(i)).setTitleX("p sector" + (i + 1));
 			thetaVSmomenutm.get(new Coordinate(i)).setTitleY("theta ");
-			thetaVSphi.put(new Coordinate(i), new H2F("Theta VS phi sector" + (i + 1), "sector" + (i + 1), 100,
-					-Math.PI, Math.PI, 100, 0, Math.PI));
+			thetaVSphi.put(new Coordinate(i),
+			        new H2F("Theta VS phi sector" + (i + 1), "sector" + (i + 1), 100, -Math.PI, Math.PI, 100, 0, Math.PI));
 			thetaVSphi.get(new Coordinate(i)).setTitleX("phi sector" + (i + 1));
 			thetaVSphi.get(new Coordinate(i)).setTitleY("theta ");
 			for (int j = 0; j < 6; j++) {
 				occupanciesByCoordinate.put(new Coordinate(i, j),
-						new H2F("Occupancy all hits SL" + i + "sector" + j, "", 112, 1, 113, 6, 1, 7));
+				        new H2F("Occupancy all hits SL" + i + "sector" + j, "", 112, 1, 113, 6, 1, 7));
 				occupanciesByCoordinate.get(new Coordinate(i, j)).setTitleX("Wire Sector" + (j + 1));
 				occupanciesByCoordinate.get(new Coordinate(i, j)).setTitleY("Layer SL" + (i + 1));
-				occupanciesintrack.put(new Coordinate(i, j),
-						new H2F("Occupancy used in track" + i, "", 112, 1, 113, 6, 1, 7));
+				occupanciesintrack.put(new Coordinate(i, j), new H2F("Occupancy used in track" + i, "", 112, 1, 113, 6, 1, 7));
 				occupanciesintrack.get(new Coordinate(i, j)).setTitleX("Wire Sector" + (j + 1));
 				occupanciesintrack.get(new Coordinate(i, j)).setTitleY("Layer SL" + (i + 1));
 				
@@ -378,9 +384,8 @@ public class DCMonitoring implements IDataEventListener {
 		Map<Integer, Integer> map1 = new HashMap<>();
 		Map<Integer, Integer> map2 = new HashMap<>();
 		for (int i = 0; i < bnkHits.rows(); i++) {
-			occupanciesByCoordinate
-					.get(new Coordinate(bnkHits.getInt("superlayer", i) - 1, bnkHits.getInt("sector", i) - 1))
-					.fill(bnkHits.getInt("wire", i), bnkHits.getInt("layer", i));
+			occupanciesByCoordinate.get(new Coordinate(bnkHits.getInt("superlayer", i) - 1, bnkHits.getInt("sector", i) - 1))
+			        .fill(bnkHits.getInt("wire", i), bnkHits.getInt("layer", i));
 
 			if (bnkHits.getByte("trkID", i) > 0) {
 				occupanciesintrack
@@ -392,7 +397,7 @@ public class DCMonitoring implements IDataEventListener {
 			
 
 			trkdocasvstime.get(new Coordinate(bnkHits.getInt("superlayer", i) - 1, bnkHits.getInt("sector", i) - 1))
-					.fill(bnkHits.getFloat("time", i), bnkHits.getFloat("trkDoca", i));
+			        .fill(bnkHits.getFloat("time", i), bnkHits.getFloat("trkDoca", i));
 			Residual.get(new Coordinate(bnkHits.getInt("sector", i) - 1)).fill(bnkHits.getFloat("timeResidual", i));
 
 			int key = bnkHits.getInt("trkID", i);
@@ -406,11 +411,11 @@ public class DCMonitoring implements IDataEventListener {
 				map2.put(key, bnkHits.getInt("sector", i));
 			}
 			int region = (int) Math.ceil(bnkHits.getInt("superlayer", i) / 2.0);// needs
-																				// the
-																				// .0
-																				// to
-																				// be
-																				// correct
+			                                                                    // the
+			                                                                    // .0
+			                                                                    // to
+			                                                                    // be
+			                                                                    // correct
 			times.get(new Coordinate(region - 1, bnkHits.getInt("sector", i) - 1)).fill(bnkHits.getFloat("time", i));
 
 			for (int j = i + 1; j < bnkHits.rows(); j++) {
@@ -432,11 +437,11 @@ public class DCMonitoring implements IDataEventListener {
 				}
 				else if (bnkHits.getInt("sector", i) == 2 && bnkHits.getInt("sector", j) == 2) {
 					int board1 = (int) Math.ceil(bnkHits.getInt("wire", i) / 16.0);// needs
-																					// the
-																					// .0
-																					// to
-																					// be
-																					// correct
+					                                                               // the
+					                                                               // .0
+					                                                               // to
+					                                                               // be
+					                                                               // correct
 					int board2 = (int) Math.ceil(bnkHits.getInt("wire", j) / 16.0);
 					if ((board1 == board2) && (bnkHits.getByte("superlayer", i) == bnkHits.getByte("superlayer", j))) {
 
@@ -502,6 +507,7 @@ public class DCMonitoring implements IDataEventListener {
 
 						timediff_s6.get(new Coordinate(bnkHits.getInt("superlayer", i) - 1, board1 - 1))
 								.fill(bnkHits.getFloat("time", i) - bnkHits.getFloat("time", j));
+
 					}
 
 				}
@@ -519,11 +525,10 @@ public class DCMonitoring implements IDataEventListener {
 	private void processTBCrosses(DataEvent event) {
 		DataBank tbcrossesBank = event.getBank("TimeBasedTrkg::TBCrosses");
 		for (int i = 0; i < tbcrossesBank.rows(); i++) {
-			cross_uyvsux
-					.get(new Coordinate(tbcrossesBank.getInt("region", i) - 1, tbcrossesBank.getInt("sector", i) - 1))
-					.fill(tbcrossesBank.getFloat("ux", i), tbcrossesBank.getFloat("uy", i));
+			cross_uyvsux.get(new Coordinate(tbcrossesBank.getInt("region", i) - 1, tbcrossesBank.getInt("sector", i) - 1))
+			        .fill(tbcrossesBank.getFloat("ux", i), tbcrossesBank.getFloat("uy", i));
 			cross_yvsx.get(new Coordinate(tbcrossesBank.getInt("region", i) - 1, tbcrossesBank.getInt("sector", i) - 1))
-					.fill(tbcrossesBank.getFloat("x", i), tbcrossesBank.getFloat("y", i));
+			        .fill(tbcrossesBank.getFloat("x", i), tbcrossesBank.getFloat("y", i));
 
 		}
 	}
@@ -548,6 +553,7 @@ public class DCMonitoring implements IDataEventListener {
 					tbtracksBank.getFloat("p0_z", i));
 			thetaVSmomenutm.get(new Coordinate(tbtracksBank.getInt("sector", i) - 1)).fill(momentum.mag(),
 					momentum.theta());
+
 			thetaVSphi.get(new Coordinate(tbtracksBank.getInt("sector", i) - 1)).fill(momentum.phi(), momentum.theta());
 			Chisqpertrck.get(new Coordinate(tbtracksBank.getInt("sector", i) - 1)).fill(chisq/NDF);
 			Momentum.get(new Coordinate(tbtracksBank.getInt("sector", i) - 1)).fill(momentum.mag());
@@ -684,6 +690,7 @@ public class DCMonitoring implements IDataEventListener {
 		// frame.add(viewer.getPanel());
 		frame.add(viewer.mainPanel);
 		frame.setVisible(true);
+
 
 	}
 
