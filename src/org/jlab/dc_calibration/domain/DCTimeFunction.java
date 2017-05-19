@@ -24,7 +24,7 @@ public class DCTimeFunction {
     private double thetaDeg;
     private double docaNorm;
     private double[] par;
-    private double bfield;
+    private double bfield = 0.5;
 
     public DCTimeFunction(int superlayer, double thetaDeg, double docaNorm, double[] par) {
         this.superlayer = superlayer;
@@ -57,7 +57,7 @@ public class DCTimeFunction {
         double tMax = par[2];
         double distbeta = par[3]; // 8/3/16: initial value given by Mac is 0.050 cm.
         //Now the B-field parameters (applicable only to SL=3 & 4 i.e region-2)
-        double delta_bfield_coefficient = 0.0; //par[4];
+        double delta_bfield_coefficient = 0.0;//par[4];
         double b1 = 0.0; //par[5];
         double b2 = 0.0; //par[6];
         double b3 = 0.0; //par[7];
@@ -117,7 +117,8 @@ public class DCTimeFunction {
         //     bfield for where xhat=x/dmaxalpha where dmaxalpha is the 'dmax' for
         //           a track with local angle alpha (for local angle = alpha)
         double deltatime_bfield = 0.0;
-        if (superlayer == 3 || superlayer == 4) {
+        //if (superlayer == 3 || superlayer == 4) {
+        if (superlayer == 2 || superlayer == 3) {
             deltatime_bfield = delta_bfield_coefficient * Math.pow(bfield, 2) * tMax
                     * (b1 * xhatalpha
                     + b2 * Math.pow(xhatalpha, 2)
@@ -128,6 +129,7 @@ public class DCTimeFunction {
         // //where x is trkdoca
         double deltatime_beta = (Math.sqrt(x * x + Math.pow(distbeta * Math.pow(beta, 2), 2)) - x) / v0Par;
         calcTime = calcTime + deltatime_bfield + deltatime_beta;
+        //System.out.println("deltatime_beta = " + deltatime_beta);
 
         return calcTime;
     }
