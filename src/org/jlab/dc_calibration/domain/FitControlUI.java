@@ -290,6 +290,9 @@ public class FitControlUI extends javax.swing.JFrame {
         jTextArea1 = new javax.swing.JTextArea();
         jLabel16 = new javax.swing.JLabel();
         jButton4 = new javax.swing.JButton();
+        jButton5 = new javax.swing.JButton();
+        jButton6 = new javax.swing.JButton();
+        jButton7 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -938,6 +941,27 @@ public class FitControlUI extends javax.swing.JFrame {
             }
         });
 
+        jButton5.setText("Residuals");
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
+
+        jButton6.setText("Times");
+        jButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton6ActionPerformed(evt);
+            }
+        });
+
+        jButton7.setText("B-field");
+        jButton7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton7ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -945,13 +969,19 @@ public class FitControlUI extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 852, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addGap(6, 6, 6)
                         .addComponent(jLabel16))
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jButton4)
-                        .addGap(657, 657, 657)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButton5)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButton6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButton7)
+                        .addGap(367, 367, 367)
                         .addComponent(jButton3))
                     .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 795, javax.swing.GroupLayout.PREFERRED_SIZE)))
         );
@@ -967,7 +997,10 @@ public class FitControlUI extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton3)
-                    .addComponent(jButton4))
+                    .addComponent(jButton4)
+                    .addComponent(jButton5)
+                    .addComponent(jButton6)
+                    .addComponent(jButton7))
                 .addContainerGap())
         );
 
@@ -1046,8 +1079,8 @@ public class FitControlUI extends javax.swing.JFrame {
         //TestMainApp test = new TestMainApp ();
         //test.methodToBeInvokedByButtonClickInFitControlUI();
         //fitter.drawHistograms();
-        int Sec = gSector; //2;
-        fitter.runFitterAndDrawPlots(this, jTextArea1, Sec, gSuperlayer,
+        //int Sec = gSector; //2;
+        fitter.runFitterAndDrawPlots(this, jTextArea1, gSector, gSuperlayer,
                 xMeanErrorType, xNormLow, xNormHigh,
                 checkboxVal, checkBoxFixAll, resetFitParsLow, resetFitPars, resetFitParsHigh);
     }//GEN-LAST:event_jButton2ActionPerformed
@@ -1328,6 +1361,20 @@ public class FitControlUI extends javax.swing.JFrame {
         fitter.SliceViewer(fitter);
     }//GEN-LAST:event_jButton4ActionPerformed
 
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+        //System.out.println("Residuals button Clicked.");
+        fitter.showResidualDistributions(this, gSector, gSuperlayer, xNormLow, xNormHigh);                
+    }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+        //System.out.println("Times button Clicked.");
+        fitter.showTimeDistributions(this, gSector, gSuperlayer, xNormLow, xNormHigh);         
+    }//GEN-LAST:event_jButton6ActionPerformed
+
+    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
+        fitter.showBFieldDistributions(this, gSector, gSuperlayer, xNormLow, xNormHigh);
+    }//GEN-LAST:event_jButton7ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -1373,6 +1420,9 @@ public class FitControlUI extends javax.swing.JFrame {
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
+    private javax.swing.JButton jButton5;
+    private javax.swing.JButton jButton6;
+    private javax.swing.JButton jButton7;
     private javax.swing.JCheckBox jCheckBox1;
     private javax.swing.JCheckBox jCheckBox2;
     private javax.swing.JCheckBox jCheckBox3;

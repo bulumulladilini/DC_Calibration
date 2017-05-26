@@ -55,6 +55,8 @@ public final class Constants {
 	//protected static final double prevFitPars[] = { 62.92e-04, 1.35, 137.67, 148.02, 0.055 };
 	protected static final double prevFitPars[] = { 50e-04, 1.5, 137.67, 0.060 };
 
+        //time could get -ve due to T0 over-correction. 
+        protected static final double tMin = -50.0; //Initially I was using 0.0 for all time or t-vs-x histograms
         //protected static final double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 };
         protected static final double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 600.0, 650.0 };
         //protected static final double timeAxisMax[] = {300.0, 300.0, 650.0, 650.0, 650.0, 650.0};
