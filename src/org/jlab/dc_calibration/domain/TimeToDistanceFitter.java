@@ -1,9 +1,8 @@
-/*              
+/*
  * 		@author KPAdhikari
  *              @author m.c.kunkel
  */
 package org.jlab.dc_calibration.domain;
-
 
 
 import java.awt.Dimension;
