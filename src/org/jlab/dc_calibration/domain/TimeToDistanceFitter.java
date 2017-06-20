@@ -5,6 +5,7 @@
 package org.jlab.dc_calibration.domain;
 
 
+
 import java.awt.Dimension;
 import java.awt.Toolkit;
 import static org.jlab.dc_calibration.domain.Constants.nHists;
