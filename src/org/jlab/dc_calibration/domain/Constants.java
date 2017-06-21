@@ -48,9 +48,10 @@ public final class Constants {
 	protected static final int nTh = 9;
 	protected static final double[] thBins = { -60.0, -40.0, -20.0, -10.0, -1.0, 1.0, 10.0, 20.0, 40.0, 60.0 };
 
-        protected static final int nFitPars = 9;//v0, deltamn, tmax, distbeta, delta_bfield_coefficient, b1, b2, b3, b4;
+        protected static final int nFitPars = 10;//9;//v0, deltamn, tmax, distbeta, delta_bfield_coefficient, b1, b2, b3, b4, deltaT0;
 	//protected static final String parName[] = { "v0", "deltamn", "tmax1", "tmax2", "distbeta" };
-	protected static final String parName[] = { "v0", "deltamn", "tmax", "distbeta", "delta_bfield_coefficient", "b1", "b2", "b3", "b4"};
+        protected static final double parSteps[] = {0.00001, 0.001, 0.01, 0.0001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001};
+	protected static final String parName[] = { "v0", "deltamn", "tmax", "distbeta", "delta_bfield_coefficient", "b1", "b2", "b3", "b4", "deltaT0"};
 	//protected static final String parName[] = { "v0", "deltamn", "tmax", "distbeta" };    
 	//protected static final double prevFitPars[] = { 62.92e-04, 1.35, 137.67, 148.02, 0.055 };
 	protected static final double prevFitPars[] = { 50e-04, 1.5, 137.67, 0.060 };
@@ -82,11 +83,12 @@ public final class Constants {
 //                              = 2;   // for using XY-proj from h3BTXmap  
 //                              = 3;   // for using B-field also from h3BTXmap  
         
-        protected static final int histTypeToUseInFitting = 2; 
+        protected static final int histTypeToUseInFitting = 2;//1;//2; 
         //make the following controllable from the GUI (as we may have different Max for B-field depending on expt.
         protected static final int bFieldBins = 20;
         protected static double bFieldMin = 0.0, bFieldMax = 1.5;
         protected static final int binForTestPlotTemp = bFieldBins/2; //for temp purpose
+        protected static final double calcDocaCut = 5.0; //1.0 //0.85
         
 	private Constants() {}
 }

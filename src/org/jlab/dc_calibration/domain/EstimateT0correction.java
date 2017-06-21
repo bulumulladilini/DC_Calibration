@@ -80,7 +80,7 @@ public class EstimateT0correction {
     //int [][][] Sectors = new int [nCrates][nSlots][nChannels];
     //int [][][] Layers = new int [nCrates][nSlots][nChannels];
     //int [][][] Components = new int [nCrates][nSlots][nChannels];
-    public GetDCTranslationTableFromCCDB tt;
+    public ReadDCTranslationTableFromCCDB tt;
     public T0SignalCableMap cableMap;
     FileOutputWriter file = null;
     

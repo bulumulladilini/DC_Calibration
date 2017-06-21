@@ -8,7 +8,7 @@
  *   / X MK X /
  *  / X MK X /
  * (________(                @author m.c.kunkel
- *  `------'
+ *  `------'				 @author KPAdhikari
 */
 package org.jlab.dc_calibration.domain;
 
@@ -40,19 +40,40 @@ public class DCFitDrawer extends Func1D {
 		this.isLinearFit = isLinearFit;
 	}
 
+//	private void initParameters() {
+//		ArrayList<String> pars = new ArrayList<String>();
+//		pars.add("v0");
+//		pars.add("deltamn");
+//		pars.add("tmax");
+//		pars.add("distbeta");
+//		for (int loop = 0; loop < pars.size(); loop++) {
+//			this.addParameter(pars.get(loop));
+//		}
+//		double prevFitPars[] = { 62.92e-04, 1.35, 148.02, 0.055 };
+//
+//		this.setParameters(prevFitPars);
+//	}
+        
 	private void initParameters() {
 		ArrayList<String> pars = new ArrayList<String>();
 		pars.add("v0");
 		pars.add("deltamn");
 		pars.add("tmax");
 		pars.add("distbeta");
+                pars.add("delta_bfield_coefficient");
+                pars.add("b1");
+                pars.add("b2");
+                pars.add("b3");
+                pars.add("b4");
+                pars.add("deltaT0");
 		for (int loop = 0; loop < pars.size(); loop++) {
 			this.addParameter(pars.get(loop));
 		}
-		double prevFitPars[] = { 62.92e-04, 1.35, 148.02, 0.055 };
+		//double prevFitPars[] = { 62.92e-04, 1.35, 148.02, 0.055 };//It wont matter what value we give it here
+		double prevFitPars[] = { 62.92e-04, 1.35, 148.02, 0.055, 0.16, 0.4, -2.0, 10.0, -6.5, 10.0 };
 
 		this.setParameters(prevFitPars);
-	}
+	}        
 
 	private void setParmLength(int i) {
 		this.fPars = new double[i + 1];

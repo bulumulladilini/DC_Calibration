@@ -62,11 +62,12 @@ public class DCFitDrawerForXDoca extends Func1D {
                 pars.add("b2");
                 pars.add("b3");
                 pars.add("b4");
+                pars.add("deltaT0");
 		for (int loop = 0; loop < pars.size(); loop++) {
 			this.addParameter(pars.get(loop));
 		}
 		//double prevFitPars[] = { 62.92e-04, 1.35, 148.02, 0.055 };//It wont matter what value we give it here
-		double prevFitPars[] = { 62.92e-04, 1.35, 148.02, 0.055, 0.16, 0.4, -2.0, 10.0, -6.5 };
+		double prevFitPars[] = { 62.92e-04, 1.35, 148.02, 0.055, 0.16, 0.4, -2.0, 10.0, -6.5, 0.0 };
 
 		this.setParameters(prevFitPars);
 	}
