@@ -1,4 +1,4 @@
-//https://tips4java.wordpress.com/2008/11/08/message-console/
+//kp: https://tips4java.wordpress.com/2008/11/08/message-console/
 package org.jlab.dc_calibration.domain;
 
 import java.io.*;

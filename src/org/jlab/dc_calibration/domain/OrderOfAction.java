@@ -1,3 +1,6 @@
+/*
+* @author m.c.kunkel, kpadhikari
+*/
 package org.jlab.dc_calibration.domain;
 
 import java.awt.Color;
