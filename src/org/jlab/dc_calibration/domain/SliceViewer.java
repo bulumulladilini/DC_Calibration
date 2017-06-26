@@ -109,6 +109,7 @@ public class SliceViewer extends JPanel {
             //System.out.println("xbinPos = " + h2d.getDataX(xBin4Slice));
             xBinPos = h2d.getDataX(xBin4Slice);
             xSlice.setTitleX(xBin4Slice + String.format("th x-slice at x = %4.3f", xBinPos));
+            xSlice.setOptStat(1110);
             c1.draw(xSlice);
         }
         c1.update();

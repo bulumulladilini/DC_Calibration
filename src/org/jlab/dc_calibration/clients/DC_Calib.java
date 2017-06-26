@@ -588,7 +588,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         fileList = fc.getSelectedFiles();
         fileArray = new ArrayList<String>();
         for (File file : fileList) {
-            System.out.println("Readying file " + file);
+            System.out.println("Reading file " + file);
             fileArray.add(file.toString());
         }
     }

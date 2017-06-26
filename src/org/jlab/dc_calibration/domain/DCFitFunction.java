@@ -38,6 +38,7 @@ public class DCFitFunction implements FCNBase {
     private Map<Coordinate, SimpleH3D> h3BvTvX = new HashMap<Coordinate, SimpleH3D>();
     private int nBinsX, nBinsY, nBinsZ;
     double dMax;// = 2 * wpdist[superlayer];
+    boolean [] selectedAngleBins = new boolean [nThBinsVz];
 
     private DCTimeFunction timeFunc;
 
@@ -59,7 +60,7 @@ public class DCFitFunction implements FCNBase {
     }
 
     public DCFitFunction(Map<Coordinate, H2F> h2timeVtrkDoca, int sector, int superlayer,
-            int meanErrorType, double docaNormMin, double docaNormMax, boolean isLinear) {
+            int meanErrorType, double docaNormMin, double docaNormMax, boolean isLinear, boolean [] selectedAngleBins) {
         this.h2timeVtrkDoca = h2timeVtrkDoca;
         this.sector = sector;
         this.superlayer = superlayer;
@@ -69,12 +70,18 @@ public class DCFitFunction implements FCNBase {
         this.docaNormMax = docaNormMax;
         //this.thetaBin = thetaBin; //To be removed later
         dMax = 2 * wpdist[superlayer];
+        this.selectedAngleBins = selectedAngleBins;
+        
+        System.out.println("Inside DCFitFunction constructor ...");
+        for (int i = 0; i < selectedAngleBins.length; i++) {
+            System.out.println(i + " " + selectedAngleBins[i]);
+        }
     }
 
     //Added boolean dummy to avoid "Method has the same erasure add(Set) as above DCFitFunction(..)" error or warning
     //  Later, I may want to have a similar but an entirely different class to deal with the SimpleH3D histos.
     public DCFitFunction(Map<Coordinate, SimpleH3D> h3BvTvX, int sector, int superlayer,
-            int meanErrorType, double docaNormMin, double docaNormMax, boolean isLinear, boolean dummy) {
+            int meanErrorType, double docaNormMin, double docaNormMax, boolean isLinear, boolean [] selectedAngleBins, boolean dummy) {
         this.h3BvTvX = h3BvTvX;
         this.sector = sector;
         this.superlayer = superlayer;
@@ -84,6 +91,12 @@ public class DCFitFunction implements FCNBase {
         this.docaNormMax = docaNormMax;
         //this.thetaBin = thetaBin; //To be removed later
         dMax = 2 * wpdist[superlayer];
+        this.selectedAngleBins = selectedAngleBins;
+        
+        System.out.println("Inside DCFitFunction constructor ...");
+        for (int i = 0; i < selectedAngleBins.length; i++) {
+            System.out.println(i + " " + selectedAngleBins[i]);
+        }        
     }
 
     public double errorDef() {
@@ -114,14 +127,18 @@ public class DCFitFunction implements FCNBase {
         H1F sliceX;
         double nSliceX = 0.0;
 
-        for (int th = 0 + discardThBins; th < nThBinsVz - discardThBins; th++) {
-            //discard central bin (i.e. the bin around zero-degree) to avoid bad relolution events
-            if (th == (nThBinsVz / 2)) {
+        for (int th = 0 ; th < nThBinsVz; th++) {
+            if(selectedAngleBins[th]==false) {
                 continue;
             }
-            if (th == (nThBinsVz / 2) - 1 || th == (nThBinsVz / 2) + 1) {
-                continue;
-            } //Next bin on each side of the central one
+//        for (int th = 0 + discardThBins; th < nThBinsVz - discardThBins; th++) {
+//            //discard central bin (i.e. the bin around zero-degree) to avoid bad relolution events
+//            if (th == (nThBinsVz / 2)) {
+//                continue;
+//            }
+//            if (th == (nThBinsVz / 2) - 1 || th == (nThBinsVz / 2) + 1) {
+//                continue;
+//            } //Next bin on each side of the central one
 
             thetaDeg = 0.5 * (thEdgeVzL[th] + thEdgeVzH[th]);
             h2tvXnorm = h2timeVtrkDoca.get(new Coordinate(sector, superlayer, th));
@@ -165,15 +182,19 @@ public class DCFitFunction implements FCNBase {
         H2F h2tvXnorm;
 
         int nBinsX = 0, nBinsY = 0;
-
-        for (int th = 0 + discardThBins; th < nThBinsVz - discardThBins; th++) {
-            //discard central bin (i.e. the bin around zero-degree) to avoid bad relolution events
-            if (th == (nThBinsVz / 2)) {
+        
+        for (int th = 0 ; th < nThBinsVz; th++) {
+            if(selectedAngleBins[th]==false) {
                 continue;
             }
-            if (th == (nThBinsVz / 2) - 1 || th == (nThBinsVz / 2) + 1) {
-                continue;
-            } //Next bin on each side of the central one
+//        for (int th = 0 + discardThBins; th < nThBinsVz - discardThBins; th++) {
+//            //discard central bin (i.e. the bin around zero-degree) to avoid bad relolution events
+//            if (th == (nThBinsVz / 2)) {
+//                continue;
+//            }
+//            if (th == (nThBinsVz / 2) - 1 || th == (nThBinsVz / 2) + 1) {
+//                continue;
+//            } //Next bin on each side of the central one
 
             thetaDeg = 0.5 * (thEdgeVzL[th] + thEdgeVzH[th]);
             if (histTypeToUseInFitting == 1) {

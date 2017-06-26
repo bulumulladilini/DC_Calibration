@@ -20,6 +20,9 @@ import javax.swing.text.DefaultEditorKit;
 import javax.swing.text.JTextComponent;
 import static org.jlab.dc_calibration.domain.Constants.nFitPars;
 import static org.jlab.dc_calibration.domain.Constants.nSectors;
+import static org.jlab.dc_calibration.domain.Constants.nThBinsVz;
+import static org.jlab.dc_calibration.domain.Constants.parName;
+import static org.jlab.dc_calibration.domain.Constants.parSteps;
 
 /**
  *
@@ -29,30 +32,36 @@ public class FitControlUI extends javax.swing.JFrame {
 
     public static int counterForConsole;
     private final int nSL = 6;
-    private final int nPars = 9;
+    //private final int nPars = nFitPars; //9;
     private int gSector = 2;
     private int gSuperlayer = 1;
     private String ccdbVariation = "dc_test1";
     private int xMeanErrorType = 2; //0: RMS, 1=RMS/sqrt(N), 2 = 1.0 (giving equal weight to all profile means)
-    private boolean[] checkboxVal = {false, false, false, false, false, false, false, false, false};
+    private boolean[] checkboxVal = {false, false, false, false, false, false, false, false, false, false};
     private boolean checkBoxFixAll = false;
-    private String[] pName = {"'v0'", "'deltanm'", "'tmax'", "'distbeta'",
-        "'delta_bfield_coeff'", "'b1'", "'b2'", "'b3'", "'b4'"};
+    public boolean[] selectedAngleBins //= new boolean[nThBinsVz];
+            = {false, false, false, false, true, true, true, false, false, false, true, true, true, false, false, false, false};
+    //By default, I am skipping first and last four and the middle three local angle bins when I am doing the t-vs-x fits.
+
+//    private String[] pName = {"'v0'", "'deltanm'", "'tmax'", "'distbeta'",
+//        "'delta_bfield_coeff'", "'b1'", "'b2'", "'b3'", "'b4'", "deltaT0"};
     private double[][] prevFitPars = {
-        {0.00425851, 1.45006, 154.907, 0.0544372, 0.162558, 0.4, -2, 10, -6.5},
-        {0.00507441, 1.54967, 174.951, 0.0506063, 0.149833, 0.4, -2, 10, -6.5},
-        {0.0047, 1.5, 300, 0.05, 0.16, 0.4, -2, 10, -6.5},
-        {0.0047, 1.5, 320, 0.05, 0.16, 0.4, -2, 10, -6.5},
-        {0.00450873, 1.38522, 479.106, 0.0514813, 0.167213, 0.4, -2, 10, -6.5},
-        {0.0048289, 1.56417, 505.953, 0.0519927, 0.14745, 0.4, -2, 10, -6.5}
+        {0.00425851, 1.45006, 154.907, 0.0544372, 0.162558, 0.4, -2, 10, -6.5, 5.0},
+        {0.00507441, 1.54967, 174.951, 0.0506063, 0.149833, 0.4, -2, 10, -6.5, 5.0},
+        {0.00470000, 1.50000, 300.000, 0.0500000, 0.160000, 0.4, -2, 10, -6.5, 5.0},
+        {0.00470000, 1.50000, 320.000, 0.0500000, 0.160000, 0.4, -2, 10, -6.5, 5.0},
+        {0.00450873, 1.38522, 479.106, 0.0514813, 0.167213, 0.4, -2, 10, -6.5, 5.0},
+        {0.00482890, 1.56417, 505.953, 0.0519927, 0.147450, 0.4, -2, 10, -6.5, 5.0}
     };
-    private double[][] resetFitPars = new double[nSL][nPars];
-    private double[][] resetFitParsLow = new double[nSL][nPars];
-    private double[][] resetFitParsHigh = new double[nSL][nPars];
+    private double[][] resetFitPars = new double[nSL][nFitPars];
+    private double[][] resetFitParsLow = new double[nSL][nFitPars];
+    private double[][] resetFitParsHigh = new double[nSL][nFitPars];
+    private double[][] resetFitParSteps = new double[nSL][nFitPars];
     private double[][][] parsFromCCDB_default = new double[nSectors][nSL][nFitPars];//nFitPars = 9
     private double[][][] parsFromCCDB_dc_test1 = new double[nSectors][nSL][nFitPars];//nFitPars = 9
     private double xNormLow = 0.0, xNormHigh = 0.8;
     TimeToDistanceFitter fitter;
+    FitControlBinSelectionUI binSelector;
 
     /**
      * Creates new form FitControlUI
@@ -64,7 +73,7 @@ public class FitControlUI extends javax.swing.JFrame {
         this.fitter = fitter;
         /*
         for(int i=0; i<nSL; i++) {
-            for(int j=0; j<nPars; j++) {
+            for(int j=0; j<nFitPars; j++) {
                 //resetFitPars[i][j] = prevFitPars[i][j];
                 //resetFitParsLow[i][j]  = 0.2 * prevFitPars[i][j];
                 //resetFitParsHigh[i][j] = 2.0 * prevFitPars[i][j];
@@ -79,8 +88,9 @@ public class FitControlUI extends javax.swing.JFrame {
         int superlayer = Integer.parseInt(jComboBox2.getSelectedItem().toString());
         ccdbVariation = jComboBox4.getSelectedItem().toString(); //0 for default, 1 for dc_test1 tables
 
-        putCCDBvaluesToResetArrays(sector, ccdbVariation);
-        assignParValuesToTextFields(sector, superlayer);
+        putCCDBvaluesToResetArrays(sector, ccdbVariation); //Initializing reset arrays for par, parLow, & parHigh
+        putStepSizeFromConstantsToResetArrays(sector);     //Initializing reset array for stepSizes
+        assignParValuesToTextFields(sector, superlayer);   //Make the numbers in reset arrays show up in the text fields
 
         /*
         try {
@@ -110,7 +120,7 @@ public class FitControlUI extends javax.swing.JFrame {
         //   the corresponding jComboBox4, it's better to read both once at the beginning,
         //   keep them stored in two different array variables and use those arrays later.
         ReadT2DparsFromCCDB rdTable = new ReadT2DparsFromCCDB("dc_test1");
-        parsFromCCDB_dc_test1 = rdTable.parsFromCCDB;  
+        parsFromCCDB_dc_test1 = rdTable.parsFromCCDB;
 
         ReadT2DparsFromCCDB rdTable2 = new ReadT2DparsFromCCDB("default");
         parsFromCCDB_default = rdTable2.parsFromCCDB;
@@ -118,16 +128,35 @@ public class FitControlUI extends javax.swing.JFrame {
 
     private void putCCDBvaluesToResetArrays(int sector, String ccdbVariation) {
         for (int i = 0; i < nSL; i++) {
-            for (int j = 0; j < nPars; j++) {
+            for (int j = 0; j < nFitPars; j++) {
+                //Get the init values from CCDB
                 if (ccdbVariation == "dc_test1") {
                     resetFitPars[i][j] = parsFromCCDB_dc_test1[sector - 1][i][j];
-                    resetFitParsLow[i][j] = 0.2 * parsFromCCDB_dc_test1[sector - 1][i][j];
-                    resetFitParsHigh[i][j] = 2.0 * parsFromCCDB_dc_test1[sector - 1][i][j];
                 } else if (ccdbVariation == "default") {
                     resetFitPars[i][j] = parsFromCCDB_default[sector - 1][i][j];
-                    resetFitParsLow[i][j] = 0.2 * parsFromCCDB_default[sector - 1][i][j];
-                    resetFitParsHigh[i][j] = 2.0 * parsFromCCDB_default[sector - 1][i][j];
                 }
+
+                //Calculate and assign lower and upper limits based on sign and values of the init-values
+                if (resetFitPars[i][j] < 0.0) {
+                    resetFitParsLow[i][j] = 2.0 * resetFitPars[i][j];
+                    resetFitParsHigh[i][j] = 0.2 * resetFitPars[i][j];
+                } else {
+                    resetFitParsLow[i][j] = 0.2 * resetFitPars[i][j];
+                    resetFitParsHigh[i][j] = 2.0 * resetFitPars[i][j];
+                }
+            }
+
+            //6/5/17: as of now, deltaT0 is not in CCDB table, so I am assigning by hard-coding
+            resetFitPars[i][9] = 0.0;
+            resetFitParsLow[i][9] = -30.0;
+            resetFitParsHigh[i][9] = 30.0;
+        }
+    }
+
+    private void putStepSizeFromConstantsToResetArrays(int sector) {
+        for (int i = 0; i < nSL; i++) {
+            for (int j = 0; j < nFitPars; j++) {
+                resetFitParSteps[i][j] = parSteps[j];
             }
         }
     }
@@ -182,6 +211,7 @@ public class FitControlUI extends javax.swing.JFrame {
         jTextField7.setText(String.format("%5.4f", resetFitParsLow[iSL][6]));
         jTextField8.setText(String.format("%5.4f", resetFitParsLow[iSL][7]));
         jTextField9.setText(String.format("%5.4f", resetFitParsLow[iSL][8]));
+        jTextField30.setText(String.format("%5.4f", resetFitParsLow[iSL][9]));
 
         //Setting the second column of text-fields to previous values of fit-pars
         //jTextField10.setText(String.valueOf(resetFitPars[iSL][0]));//works but string format is ugly
@@ -194,6 +224,7 @@ public class FitControlUI extends javax.swing.JFrame {
         jTextField16.setText(String.format("%5.4f", resetFitPars[iSL][6]));
         jTextField17.setText(String.format("%5.4f", resetFitPars[iSL][7]));
         jTextField18.setText(String.format("%5.4f", resetFitPars[iSL][8]));
+        jTextField31.setText(String.format("%5.4f", resetFitPars[iSL][9]));
 
         //Setting the third column of text-fields to 2.0 times the previous values of fit-pars
         jTextField19.setText(String.format("%5.4f", resetFitParsHigh[iSL][0]));
@@ -205,6 +236,20 @@ public class FitControlUI extends javax.swing.JFrame {
         jTextField25.setText(String.format("%5.4f", resetFitParsHigh[iSL][6]));
         jTextField26.setText(String.format("%5.4f", resetFitParsHigh[iSL][7]));
         jTextField27.setText(String.format("%5.4f", resetFitParsHigh[iSL][8]));
+        jTextField32.setText(String.format("%5.4f", resetFitParsHigh[iSL][9]));
+
+        //Now setting the fourth column (for step sizes) in terms of parSteps array (see Constants.java)
+        //double parSteps[] = {0.00001, 0.001, 0.01, 0.0001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001};
+        jTextField33.setText(String.format("%6.5f", resetFitParSteps[iSL][0]));
+        jTextField34.setText(String.format("%6.5f", resetFitParSteps[iSL][1]));
+        jTextField35.setText(String.format("%6.5f", resetFitParSteps[iSL][2]));
+        jTextField36.setText(String.format("%6.5f", resetFitParSteps[iSL][3]));
+        jTextField37.setText(String.format("%6.5f", resetFitParSteps[iSL][4]));
+        jTextField38.setText(String.format("%6.5f", resetFitParSteps[iSL][5]));
+        jTextField39.setText(String.format("%6.5f", resetFitParSteps[iSL][6]));
+        jTextField40.setText(String.format("%6.5f", resetFitParSteps[iSL][7]));
+        jTextField41.setText(String.format("%6.5f", resetFitParSteps[iSL][8]));
+        jTextField42.setText(String.format("%6.5f", resetFitParSteps[iSL][9]));
 
         jTextField28.setText(String.format("%5.4f", xNormLow));
         jTextField29.setText(String.format("%5.4f", xNormHigh));
@@ -285,13 +330,34 @@ public class FitControlUI extends javax.swing.JFrame {
         jCheckBoxFixAll = new javax.swing.JCheckBox();
         jComboBox4 = new javax.swing.JComboBox<>();
         jLabel21 = new javax.swing.JLabel();
+        jTextField30 = new javax.swing.JTextField();
+        jTextField31 = new javax.swing.JTextField();
+        jTextField32 = new javax.swing.JTextField();
+        jCheckBox10 = new javax.swing.JCheckBox();
+        jLabel22 = new javax.swing.JLabel();
+        jLabel23 = new javax.swing.JLabel();
+        jTextField33 = new javax.swing.JTextField();
+        jTextField34 = new javax.swing.JTextField();
+        jTextField35 = new javax.swing.JTextField();
+        jTextField36 = new javax.swing.JTextField();
+        jTextField37 = new javax.swing.JTextField();
+        jTextField38 = new javax.swing.JTextField();
+        jTextField39 = new javax.swing.JTextField();
+        jTextField40 = new javax.swing.JTextField();
+        jTextField41 = new javax.swing.JTextField();
+        jTextField42 = new javax.swing.JTextField();
+        jButton8 = new javax.swing.JButton();
         jButton3 = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTextArea1 = new javax.swing.JTextArea();
         jLabel16 = new javax.swing.JLabel();
         jButton4 = new javax.swing.JButton();
+        jButton5 = new javax.swing.JButton();
+        jButton6 = new javax.swing.JButton();
+        jButton7 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Fit Control");
 
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Set Parameters", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Lucida Grande", 1, 14), new java.awt.Color(0, 102, 0))); // NOI18N
 
@@ -673,131 +739,106 @@ public class FitControlUI extends javax.swing.JFrame {
         jLabel21.setFont(new java.awt.Font("Lucida Grande", 1, 14)); // NOI18N
         jLabel21.setText("CCDB variation for Initial Values");
 
+        jTextField30.setText("jTextField30");
+
+        jTextField31.setText("jTextField31");
+
+        jTextField32.setText("jTextField32");
+
+        jCheckBox10.setText("Fix me");
+        jCheckBox10.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBox10ActionPerformed(evt);
+            }
+        });
+
+        jLabel22.setForeground(new java.awt.Color(0, 102, 0));
+        jLabel22.setText("deltaT0");
+
+        jLabel23.setFont(new java.awt.Font("Lucida Grande", 1, 14)); // NOI18N
+        jLabel23.setText("Step Size");
+
+        jTextField33.setText("jTextField33");
+        jTextField33.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField33ActionPerformed(evt);
+            }
+        });
+
+        jTextField34.setText("jTextField34");
+        jTextField34.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField34ActionPerformed(evt);
+            }
+        });
+
+        jTextField35.setText("jTextField35");
+        jTextField35.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField35ActionPerformed(evt);
+            }
+        });
+
+        jTextField36.setText("jTextField36");
+        jTextField36.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField36ActionPerformed(evt);
+            }
+        });
+
+        jTextField37.setText("jTextField37");
+        jTextField37.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField37ActionPerformed(evt);
+            }
+        });
+
+        jTextField38.setText("jTextField38");
+        jTextField38.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField38ActionPerformed(evt);
+            }
+        });
+
+        jTextField39.setText("jTextField39");
+        jTextField39.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField39ActionPerformed(evt);
+            }
+        });
+
+        jTextField40.setText("jTextField40");
+        jTextField40.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField40ActionPerformed(evt);
+            }
+        });
+
+        jTextField41.setText("jTextField41");
+        jTextField41.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField41ActionPerformed(evt);
+            }
+        });
+
+        jTextField42.setText("jTextField42");
+        jTextField42.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField42ActionPerformed(evt);
+            }
+        });
+
+        jButton8.setText("Select Angle Bins");
+        jButton8.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton8ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel13)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField17, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextField26, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel12)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField16, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextField25, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel11)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField15, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextField24, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel10)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField14, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextField23, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel9)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField13, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextField22, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel8)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextField21, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel7)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextField20, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel6)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField10, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextField19, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jLabel2)
-                        .addGap(18, 18, 18)
-                        .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 133, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 127, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel14)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField9, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jTextField18, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextField27, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(17, 17, 17)
-                                .addComponent(jComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(36, 36, 36)
-                                .addComponent(jLabel18)))
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(28, 28, 28)
-                                .addComponent(jTextField28, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jLabel19)
-                                .addGap(15, 15, 15)))
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel20)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(14, 14, 14)
-                                .addComponent(jTextField29, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(jButton1)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jButton2)))))
-                .addGap(23, 23, 23)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jCheckBoxFixAll)
-                    .addComponent(jCheckBox9)
-                    .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 168, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jCheckBox1)
-                    .addComponent(jCheckBox2)
-                    .addComponent(jCheckBox3)
-                    .addComponent(jCheckBox4)
-                    .addComponent(jCheckBox5)
-                    .addComponent(jCheckBox6)
-                    .addComponent(jCheckBox7)
-                    .addComponent(jCheckBox8, javax.swing.GroupLayout.PREFERRED_SIZE, 182, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(5, 5, 5)
                 .addComponent(jLabel17)
@@ -812,11 +853,153 @@ public class FitControlUI extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jComboBox4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(232, 232, 232))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(17, 17, 17)
+                                .addComponent(jComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(35, 35, 35)
+                                .addComponent(jLabel18)))
+                        .addGap(24, 24, 24)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(77, 77, 77)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, 103, Short.MAX_VALUE)
+                                    .addComponent(jTextField31)
+                                    .addComponent(jTextField11)
+                                    .addComponent(jTextField12)
+                                    .addComponent(jTextField13)
+                                    .addComponent(jTextField14)
+                                    .addComponent(jTextField18)
+                                    .addComponent(jTextField17)
+                                    .addComponent(jTextField16)
+                                    .addComponent(jTextField15)
+                                    .addComponent(jTextField10))
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addGap(18, 18, 18)
+                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                                    .addComponent(jTextField20, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 101, Short.MAX_VALUE)
+                                                    .addComponent(jTextField21, javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(jTextField22, javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(jTextField23, javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(jTextField24, javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(jTextField25, javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(jTextField26, javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(jTextField27, javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(jTextField32, javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(jTextField19)))
+                                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addGap(27, 27, 27)
+                                                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 96, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                        .addGap(18, 18, 18)
+                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addComponent(jLabel23)
+                                                .addGap(0, 0, Short.MAX_VALUE))
+                                            .addComponent(jTextField36)
+                                            .addComponent(jTextField37)
+                                            .addComponent(jTextField38)
+                                            .addComponent(jTextField39)
+                                            .addComponent(jTextField40)
+                                            .addComponent(jTextField41)
+                                            .addComponent(jTextField42)
+                                            .addComponent(jTextField33, javax.swing.GroupLayout.DEFAULT_SIZE, 98, Short.MAX_VALUE)
+                                            .addComponent(jTextField34)
+                                            .addComponent(jTextField35)))
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addGap(12, 12, 12)
+                                        .addComponent(jButton1)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                        .addComponent(jButton2))))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addGap(4, 4, 4)
+                                        .addComponent(jLabel19)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                        .addComponent(jLabel20))
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(jTextField28, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                        .addComponent(jTextField29, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jButton8))))
+                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                        .addGroup(jPanel1Layout.createSequentialGroup()
+                            .addComponent(jLabel1)
+                            .addGap(12, 12, 12)
+                            .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 111, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addComponent(jLabel6)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addComponent(jLabel7)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addComponent(jLabel8)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addComponent(jLabel9)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addComponent(jLabel10)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jTextField5, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addComponent(jLabel11)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addComponent(jLabel12)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jTextField7, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addComponent(jLabel13)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jTextField8, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addComponent(jLabel14)
+                                        .addComponent(jLabel22))
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                            .addComponent(jTextField30, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                                            .addGap(12, 12, 12)
+                                            .addComponent(jTextField9, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                            .addGap(9, 9, 9))))
+                .addGap(30, 30, 30)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jCheckBoxFixAll)
+                    .addComponent(jCheckBox9)
+                    .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 168, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jCheckBox1)
+                    .addComponent(jCheckBox2)
+                    .addComponent(jCheckBox3)
+                    .addComponent(jCheckBox4)
+                    .addComponent(jCheckBox5)
+                    .addComponent(jCheckBox6)
+                    .addComponent(jCheckBox7)
+                    .addComponent(jCheckBox8, javax.swing.GroupLayout.PREFERRED_SIZE, 182, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jCheckBox10))
+                .addContainerGap())
         );
 
         jPanel1Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {jLabel1, jLabel10, jLabel11, jLabel12, jLabel13, jLabel14, jLabel6, jLabel7, jLabel8, jLabel9});
-
-        jPanel1Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {jLabel2, jLabel3, jLabel4, jLabel5, jTextField1, jTextField10, jTextField11, jTextField12, jTextField13, jTextField14, jTextField15, jTextField16, jTextField17, jTextField18, jTextField19, jTextField2, jTextField20, jTextField21, jTextField22, jTextField23, jTextField24, jTextField25, jTextField26, jTextField27, jTextField3, jTextField4, jTextField5, jTextField6, jTextField7, jTextField8, jTextField9});
 
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -835,84 +1018,110 @@ public class FitControlUI extends javax.swing.JFrame {
                     .addComponent(jLabel2)
                     .addComponent(jLabel3)
                     .addComponent(jLabel4)
-                    .addComponent(jLabel5))
+                    .addComponent(jLabel5)
+                    .addComponent(jLabel23))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField10, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField19, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jCheckBox1))
+                    .addComponent(jCheckBox1)
+                    .addComponent(jTextField33, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel7)
                     .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField20, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jCheckBox2))
+                    .addComponent(jCheckBox2)
+                    .addComponent(jTextField34, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel8)
                     .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField21, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jCheckBox3))
+                    .addComponent(jCheckBox3)
+                    .addComponent(jTextField35, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel9)
                     .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField13, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField22, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jCheckBox4))
+                    .addComponent(jCheckBox4)
+                    .addComponent(jTextField36, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel10)
                     .addComponent(jTextField5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField14, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField23, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jCheckBox5))
+                    .addComponent(jCheckBox5)
+                    .addComponent(jTextField37, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel11)
                     .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField15, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField24, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jCheckBox6))
+                    .addComponent(jCheckBox6)
+                    .addComponent(jTextField38, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel12)
                     .addComponent(jTextField7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField16, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField25, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jCheckBox7))
+                    .addComponent(jCheckBox7)
+                    .addComponent(jTextField39, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel13)
                     .addComponent(jTextField8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField17, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jCheckBox8)
                     .addComponent(jTextField26, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jCheckBox8))
+                    .addComponent(jTextField40, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel14)
                     .addComponent(jTextField9, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField18, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jCheckBox9)
-                    .addComponent(jTextField27, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton2)
-                    .addComponent(jButton1)
-                    .addComponent(jComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField28, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField29, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jCheckBoxFixAll))
+                    .addComponent(jTextField27, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jTextField41, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel18)
-                    .addComponent(jLabel19)
-                    .addComponent(jLabel20))
-                .addContainerGap(16, Short.MAX_VALUE))
+                    .addComponent(jTextField30, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jTextField31, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jTextField32, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jCheckBox10)
+                    .addComponent(jLabel22)
+                    .addComponent(jTextField42, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(8, 8, 8)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jTextField28, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jTextField29, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jCheckBoxFixAll))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel18)
+                            .addComponent(jLabel19)
+                            .addComponent(jLabel20))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
+                        .addComponent(jButton8)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jButton1)
+                            .addComponent(jButton2))
+                        .addContainerGap())))
         );
 
         jButton3.setText("Exit");
@@ -922,7 +1131,7 @@ public class FitControlUI extends javax.swing.JFrame {
             }
         });
 
-        jScrollPane1.setBorder(javax.swing.BorderFactory.createTitledBorder("Sec    SL   v0   deltanm   tMax  distbeta  data_bfield_coeff.    b1    b2    b3   b4"));
+        jScrollPane1.setBorder(javax.swing.BorderFactory.createTitledBorder("Sec    SL   v0   deltanm   tMax  distbeta  data_bfield_coeff.    b1    b2    b3   b4  deltaT0"));
 
         jTextArea1.setColumns(20);
         jTextArea1.setRows(5);
@@ -938,6 +1147,27 @@ public class FitControlUI extends javax.swing.JFrame {
             }
         });
 
+        jButton5.setText("Residuals");
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
+
+        jButton6.setText("Times");
+        jButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton6ActionPerformed(evt);
+            }
+        });
+
+        jButton7.setText("B-field");
+        jButton7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton7ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -945,31 +1175,45 @@ public class FitControlUI extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1)
                     .addGroup(layout.createSequentialGroup()
                         .addGap(6, 6, 6)
                         .addComponent(jLabel16))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jButton4)
-                        .addGap(657, 657, 657)
-                        .addComponent(jButton3))
-                    .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 795, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 756, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addGroup(layout.createSequentialGroup()
+                            .addComponent(jButton4)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(jButton5)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(jButton6)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(jButton7)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jButton3))
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 756, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(0, 10, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(1, 1, 1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel16)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 191, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton3)
-                    .addComponent(jButton4))
+                    .addComponent(jButton4)
+                    .addComponent(jButton5)
+                    .addComponent(jButton6)
+                    .addComponent(jButton7))
                 .addContainerGap())
         );
+
+        jScrollPane1.getAccessibleContext().setAccessibleName("Sec    SL   v0   deltanm   tMax  distbeta  data_bfield_coeff.    b1    b2    b3   b4   deltaT0");
+        jScrollPane1.getAccessibleContext().setAccessibleDescription("");
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -984,6 +1228,7 @@ public class FitControlUI extends javax.swing.JFrame {
         resetFitParsLow[gSuperlayer - 1][6] = Float.parseFloat(jTextField7.getText());
         resetFitParsLow[gSuperlayer - 1][7] = Float.parseFloat(jTextField8.getText());
         resetFitParsLow[gSuperlayer - 1][8] = Float.parseFloat(jTextField9.getText());
+        resetFitParsLow[gSuperlayer - 1][9] = Float.parseFloat(jTextField30.getText());
 
         resetFitPars[gSuperlayer - 1][0] = Float.parseFloat(jTextField10.getText());
         resetFitPars[gSuperlayer - 1][1] = Float.parseFloat(jTextField11.getText());
@@ -994,6 +1239,7 @@ public class FitControlUI extends javax.swing.JFrame {
         resetFitPars[gSuperlayer - 1][6] = Float.parseFloat(jTextField16.getText());
         resetFitPars[gSuperlayer - 1][7] = Float.parseFloat(jTextField17.getText());
         resetFitPars[gSuperlayer - 1][8] = Float.parseFloat(jTextField18.getText());
+        resetFitPars[gSuperlayer - 1][9] = Float.parseFloat(jTextField31.getText());
 
         resetFitParsHigh[gSuperlayer - 1][0] = Float.parseFloat(jTextField19.getText());
         resetFitParsHigh[gSuperlayer - 1][1] = Float.parseFloat(jTextField20.getText());
@@ -1004,6 +1250,19 @@ public class FitControlUI extends javax.swing.JFrame {
         resetFitParsHigh[gSuperlayer - 1][6] = Float.parseFloat(jTextField25.getText());
         resetFitParsHigh[gSuperlayer - 1][7] = Float.parseFloat(jTextField26.getText());
         resetFitParsHigh[gSuperlayer - 1][8] = Float.parseFloat(jTextField27.getText());
+        resetFitParsHigh[gSuperlayer - 1][9] = Float.parseFloat(jTextField32.getText());
+
+        //Now the reset array for step sizes
+        resetFitParSteps[gSuperlayer - 1][0] = Float.parseFloat(jTextField33.getText());
+        resetFitParSteps[gSuperlayer - 1][1] = Float.parseFloat(jTextField34.getText());
+        resetFitParSteps[gSuperlayer - 1][2] = Float.parseFloat(jTextField35.getText());
+        resetFitParSteps[gSuperlayer - 1][3] = Float.parseFloat(jTextField36.getText());
+        resetFitParSteps[gSuperlayer - 1][4] = Float.parseFloat(jTextField37.getText());
+        resetFitParSteps[gSuperlayer - 1][5] = Float.parseFloat(jTextField38.getText());
+        resetFitParSteps[gSuperlayer - 1][6] = Float.parseFloat(jTextField39.getText());
+        resetFitParSteps[gSuperlayer - 1][7] = Float.parseFloat(jTextField40.getText());
+        resetFitParSteps[gSuperlayer - 1][8] = Float.parseFloat(jTextField41.getText());
+        resetFitParSteps[gSuperlayer - 1][9] = Float.parseFloat(jTextField42.getText());
 
         xNormLow = Float.parseFloat(jTextField28.getText());
         xNormHigh = Float.parseFloat(jTextField29.getText());
@@ -1027,6 +1286,7 @@ public class FitControlUI extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField28ActionPerformed
 
+    //kp: This comboBox is for selecting the type of error for weighting the data points used in the fits
     private void jComboBox3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox3ActionPerformed
         xMeanErrorType = jComboBox3.getSelectedIndex();
         System.out.println("Selected: item " + (xMeanErrorType + 1) + " i.e., "
@@ -1034,11 +1294,12 @@ public class FitControlUI extends javax.swing.JFrame {
 
     }//GEN-LAST:event_jComboBox3ActionPerformed
 
+    //kp: This comboBox is for selecting a superlayer out of (1, 2, ..,6)
     private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
         gSuperlayer = Integer.parseInt(jComboBox2.getSelectedItem().toString());
-
         putCCDBvaluesToResetArrays(gSector, ccdbVariation);
         assignParValuesToTextFields(gSector, gSuperlayer);
+        printValuesOfSelectedAngularBins();
     }//GEN-LAST:event_jComboBox2ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
@@ -1046,10 +1307,10 @@ public class FitControlUI extends javax.swing.JFrame {
         //TestMainApp test = new TestMainApp ();
         //test.methodToBeInvokedByButtonClickInFitControlUI();
         //fitter.drawHistograms();
-        int Sec = gSector; //2;
-        fitter.runFitterAndDrawPlots(this, jTextArea1, Sec, gSuperlayer,
-                xMeanErrorType, xNormLow, xNormHigh,
-                checkboxVal, checkBoxFixAll, resetFitParsLow, resetFitPars, resetFitParsHigh);
+        //int Sec = gSector; //2;
+        fitter.runFitterAndDrawPlots(this, jTextArea1, gSector, gSuperlayer,
+                xMeanErrorType, xNormLow, xNormHigh, checkboxVal, checkBoxFixAll,
+                resetFitParsLow, resetFitPars, resetFitParsHigh, resetFitParSteps, selectedAngleBins);
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
@@ -1057,9 +1318,9 @@ public class FitControlUI extends javax.swing.JFrame {
         //assignParValuesToTextFields(gSuperlayer); //Not necessary
 
         System.out.println(" Superlayer: " + gSuperlayer);
-        for (int i = 0; i < nPars; i++) {
+        for (int i = 0; i < nFitPars; i++) {
             if (checkboxVal[i] == true) {
-                System.out.println("Parameter " + pName[i] + " has been fixed.");
+                System.out.println("Parameter " + parName[i] + " has been fixed.");
             }
             System.out.println(String.format("Set vals for par=%d are %5.4f, %5.4f, %5.4f", (i + 1),
                     resetFitParsLow[gSuperlayer - 1][i], resetFitPars[gSuperlayer - 1][i],
@@ -1068,7 +1329,7 @@ public class FitControlUI extends javax.swing.JFrame {
 
         String fixParMessage = "";
         int fpn = 0;
-        for (int i = 0; i < nPars; i++) {
+        for (int i = 0; i < nFitPars; i++) {
             if (checkboxVal[i] == true) {
                 fixParMessage = String.format("%s p%d ", fixParMessage, i + 1);
                 fpn++;
@@ -1087,16 +1348,28 @@ public class FitControlUI extends javax.swing.JFrame {
         //JOptionPane.showMessageDialog(null, "A basic JOptionPane message dialog"); //Works
     }//GEN-LAST:event_jButton1ActionPerformed
 
+    //kp: This comboBox is for selecting a sector out of six
     private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
         gSector = Integer.parseInt(jComboBox1.getSelectedItem().toString());
         putCCDBvaluesToResetArrays(gSector, ccdbVariation);
         assignParValuesToTextFields(gSector, gSuperlayer);
         /*
         for(int i=0; i<9; i++) {
-            if(checkboxVal[i]==true) System.out.println("Parameter " + pName[i] + " has been fixed.");
+            if(checkboxVal[i]==true) System.out.println("Parameter " + parName[i] + " has been fixed.");
         }
          */
     }//GEN-LAST:event_jComboBox1ActionPerformed
+
+    //
+    //  This method is defined below automatically (couldn't move by hand), so I simply copied my additions there.
+    //
+//    private void jCheckBox10ActionPerformed(java.awt.event.ActionEvent evt) {                                           
+//        if (jCheckBox10.isSelected()) {
+//            checkboxVal[9] = true;
+//        } else {
+//            checkboxVal[9] = false;
+//        }
+//    } 
 
     private void jCheckBox9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox9ActionPerformed
         if (jCheckBox9.isSelected()) {
@@ -1290,6 +1563,7 @@ public class FitControlUI extends javax.swing.JFrame {
             jCheckBox7.setSelected(true);
             jCheckBox8.setSelected(true);
             jCheckBox9.setSelected(true);
+            jCheckBox10.setSelected(true);
         } else {
             checkBoxFixAll = false;
             jCheckBox1.setSelected(false);
@@ -1301,6 +1575,7 @@ public class FitControlUI extends javax.swing.JFrame {
             jCheckBox7.setSelected(false);
             jCheckBox8.setSelected(false);
             jCheckBox9.setSelected(false);
+            jCheckBox10.setSelected(false);
         }
 
         //Whether jCheckBoxSelectAll slected or not, call the following methods 
@@ -1316,8 +1591,10 @@ public class FitControlUI extends javax.swing.JFrame {
         jCheckBox7ActionPerformed(evt);
         jCheckBox8ActionPerformed(evt);
         jCheckBox9ActionPerformed(evt);
+        jCheckBox10ActionPerformed(evt);
     }//GEN-LAST:event_jCheckBoxFixAllActionPerformed
 
+    //kp: This comboBox is for selecting the CCDB variation from which to initialize the t-vs-x params
     private void jComboBox4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox4ActionPerformed
         ccdbVariation = jComboBox4.getSelectedItem().toString();
         putCCDBvaluesToResetArrays(gSector, ccdbVariation);
@@ -1327,6 +1604,109 @@ public class FitControlUI extends javax.swing.JFrame {
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         fitter.SliceViewer(fitter);
     }//GEN-LAST:event_jButton4ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+        //System.out.println("Residuals button Clicked.");
+        fitter.showResidualDistributions(this, gSector, gSuperlayer, xNormLow, xNormHigh);
+    }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+        //System.out.println("Times button Clicked.");
+        fitter.showTimeDistributions(this, gSector, gSuperlayer, xNormLow, xNormHigh);
+    }//GEN-LAST:event_jButton6ActionPerformed
+
+    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
+        fitter.showBFieldDistributions(this, gSector, gSuperlayer, xNormLow, xNormHigh);
+    }//GEN-LAST:event_jButton7ActionPerformed
+
+    private void jCheckBox10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox10ActionPerformed
+        if (jCheckBox10.isSelected()) {
+            checkboxVal[9] = true;
+        } else {
+            checkboxVal[9] = false;
+        }
+    }//GEN-LAST:event_jCheckBox10ActionPerformed
+
+    private void jTextField33ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField33ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField33ActionPerformed
+
+    private void jTextField34ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField34ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField34ActionPerformed
+
+    private void jTextField35ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField35ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField35ActionPerformed
+
+    private void jTextField36ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField36ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField36ActionPerformed
+
+    private void jTextField37ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField37ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField37ActionPerformed
+
+    private void jTextField38ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField38ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField38ActionPerformed
+
+    private void jTextField39ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField39ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField39ActionPerformed
+
+    private void jTextField40ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField40ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField40ActionPerformed
+
+    private void jTextField41ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField41ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField41ActionPerformed
+
+    private void jTextField42ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField42ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField42ActionPerformed
+
+    private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                //In this context, 'this' wont be referring to the object of FitControlUI class
+                //    rather that of the anonymous Runnable class and so we'll get the following 
+                //error if we put only 'this' as the first argument:
+                //       incompatible types <anonymous Runnable> cannot be converted to FitControlUI
+
+                //new FitControlBinSelectionUI(FitControlUI.this, fitter).setVisible(true);   
+                binSelector = new FitControlBinSelectionUI(FitControlUI.this, fitter);
+                binSelector.setVisible(true);
+            }
+        });
+    }//GEN-LAST:event_jButton8ActionPerformed
+
+    private void printValuesOfSelectedAngularBins() {
+        System.out.println("Tmp line for debug ..");
+        //FitControlBinSelectionUI binSelector = new FitControlBinSelectionUI(this, fitter);
+        if (!(binSelector == null)) {
+            selectedAngleBins = binSelector.checkboxVals;
+        }
+        
+        //Following is simply to print the indices of the bins that were selected
+        int countSelectedBins = 0;
+        System.out.print("The selected angular bins (indices) are = (");
+        for (int i = 0; i < selectedAngleBins.length; i++) {
+            //if(selectedAngleBins[i] == true) System.out.println((i+1) + "th bin has been selected");  
+            //System.out.println("selectedAngleBins["+i+"] = " + selectedAngleBins[i]);
+            if (selectedAngleBins[i] == true) {
+                if (countSelectedBins == 0) {
+                    System.out.print(i);
+                } else {
+                    System.out.print(", " + i);
+                }
+                countSelectedBins++;
+            }
+        }
+        System.out.println(")");
+    }
 
     /**
      * @param args the command line arguments
@@ -1359,6 +1739,9 @@ public class FitControlUI extends javax.swing.JFrame {
             java.util.logging.Logger.getLogger(FitControlUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -1373,7 +1756,12 @@ public class FitControlUI extends javax.swing.JFrame {
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
+    private javax.swing.JButton jButton5;
+    private javax.swing.JButton jButton6;
+    private javax.swing.JButton jButton7;
+    private javax.swing.JButton jButton8;
     private javax.swing.JCheckBox jCheckBox1;
+    private javax.swing.JCheckBox jCheckBox10;
     private javax.swing.JCheckBox jCheckBox2;
     private javax.swing.JCheckBox jCheckBox3;
     private javax.swing.JCheckBox jCheckBox4;
@@ -1401,6 +1789,8 @@ public class FitControlUI extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel21;
+    private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel jLabel23;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -1434,7 +1824,20 @@ public class FitControlUI extends javax.swing.JFrame {
     private javax.swing.JTextField jTextField28;
     private javax.swing.JTextField jTextField29;
     private javax.swing.JTextField jTextField3;
+    private javax.swing.JTextField jTextField30;
+    private javax.swing.JTextField jTextField31;
+    private javax.swing.JTextField jTextField32;
+    private javax.swing.JTextField jTextField33;
+    private javax.swing.JTextField jTextField34;
+    private javax.swing.JTextField jTextField35;
+    private javax.swing.JTextField jTextField36;
+    private javax.swing.JTextField jTextField37;
+    private javax.swing.JTextField jTextField38;
+    private javax.swing.JTextField jTextField39;
     private javax.swing.JTextField jTextField4;
+    private javax.swing.JTextField jTextField40;
+    private javax.swing.JTextField jTextField41;
+    private javax.swing.JTextField jTextField42;
     private javax.swing.JTextField jTextField5;
     private javax.swing.JTextField jTextField6;
     private javax.swing.JTextField jTextField7;

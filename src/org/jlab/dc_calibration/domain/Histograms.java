@@ -7,7 +7,7 @@
  *    / X MK X /`-------'
  *   / X MK X /
  *  / X MK X /
- * (________(                @author m.c.kunkel
+ * (________(                @author m.c.kunkel, kpadhikari
  *  `------'
 */
 package org.jlab.dc_calibration.domain;

@@ -7,14 +7,15 @@
  *    / X MK X /`-------'
  *   / X MK X /
  *  / X MK X /
- * (________(                @author m.c.kunkel, kpadhikari
- *  `------'				
+ * (________(                @author m.c.kunkel
+ *  `------'				 @author KPAdhikari				
  */
 package org.jlab.dc_calibration.domain;
 
 import static org.jlab.dc_calibration.domain.Constants.beta;
 import static org.jlab.dc_calibration.domain.Constants.deg2rad;
 import static org.jlab.dc_calibration.domain.Constants.histTypeToUseInFitting;
+import static org.jlab.dc_calibration.domain.Constants.nFitPars;
 import static org.jlab.dc_calibration.domain.Constants.rad2deg;
 import static org.jlab.dc_calibration.domain.Constants.wpdist;
 
@@ -57,26 +58,29 @@ public class DCTimeFunction {
         double tMax = par[2];
         double distbeta = par[3]; // 8/3/16: initial value given by Mac is 0.050 cm.
         //Now the B-field parameters (applicable only to SL=3 & 4 i.e region-2)
-        double delta_bfield_coefficient = 0.0;//par[4];
-        double b1 = 0.0; //par[5];
-        double b2 = 0.0; //par[6];
-        double b3 = 0.0; //par[7];
-        double b4 = 0.0; //par[8];
-        
-        //Nominal values of the b-field parameters.
-        delta_bfield_coefficient = 0.16;
-        b1 = 0.4;
-        b2 = -2.0;
-        b3 = 10.0;
-        b4 = -6.5;
-        
-        if (histTypeToUseInFitting == 3) { //For other cases the b-field parameters will be fixed to nominal values
-            delta_bfield_coefficient = par[4]; //0.0; //par[4];
-            b1 = par[5];//0.0; //par[5];
-            b2 = par[6];//0.0; //par[6];
-            b3 = par[7];//0.0; //par[7];
-            b4 = par[8];//0.0; //par[8];
-        }
+        double delta_bfield_coefficient = par[4]; //=0.0;
+        double b1 = par[5]; //=0.0;
+        double b2 = par[6]; //=0.0;
+        double b3 = par[7]; //=0.0;
+        double b4 = par[8]; //=0.0;
+        double deltaT0 = 0.0; //par[9]; //=0.0;
+        if(nFitPars > 9) deltaT0 = par[9];
+//        
+//        //Nominal values of the b-field parameters.
+//        delta_bfield_coefficient = 0.16;
+//        b1 = 0.4;
+//        b2 = -2.0;
+//        b3 = 10.0;
+//        b4 = -6.5;
+//        
+//        //if (histTypeToUseInFitting == 3) { //For other cases the b-field parameters will be fixed to nominal values
+//        if (histTypeToUseInFitting > 1) { //For other cases the b-field parameters will be fixed to nominal values
+//            delta_bfield_coefficient = par[4]; //0.0; //par[4];
+//            b1 = par[5];//0.0; //par[5];
+//            b2 = par[6];//0.0; //par[6];
+//            b3 = par[7];//0.0; //par[7];
+//            b4 = par[8];//0.0; //par[8];
+//        }
 
         // Assume a functional form (time =
         // First, calculate n
@@ -128,7 +132,7 @@ public class DCTimeFunction {
 
         // //where x is trkdoca
         double deltatime_beta = (Math.sqrt(x * x + Math.pow(distbeta * Math.pow(beta, 2), 2)) - x) / v0Par;
-        calcTime = calcTime + deltatime_bfield + deltatime_beta;
+        calcTime = calcTime + deltatime_bfield + deltatime_beta + deltaT0;
         //System.out.println("deltatime_beta = " + deltatime_beta);
 
         return calcTime;

@@ -41,16 +41,18 @@ import org.freehep.math.minuit.FunctionMinimum;
 import org.freehep.math.minuit.MnMigrad;
 import org.freehep.math.minuit.MnStrategy;
 import org.freehep.math.minuit.MnUserParameters;
-import org.jlab.dc_calibration.NTuple.NTuple;
+//import org.jlab.dc_calibration.NTuple.NTuple;
 import static org.jlab.dc_calibration.domain.Constants.bFieldBins;
 import static org.jlab.dc_calibration.domain.Constants.bFieldMax;
 import static org.jlab.dc_calibration.domain.Constants.bFieldMin;
 import static org.jlab.dc_calibration.domain.Constants.binForTestPlotTemp;
+import static org.jlab.dc_calibration.domain.Constants.calcDocaCut;
 import static org.jlab.dc_calibration.domain.Constants.histTypeToUseInFitting;
 import static org.jlab.dc_calibration.domain.Constants.iSecMax;
 import static org.jlab.dc_calibration.domain.Constants.iSecMin;
 import static org.jlab.dc_calibration.domain.Constants.nFitPars;
 import static org.jlab.dc_calibration.domain.Constants.nThBinsVz2;
+import static org.jlab.dc_calibration.domain.Constants.tMin;
 import static org.jlab.dc_calibration.domain.Constants.thEdgeVzH2;
 import static org.jlab.dc_calibration.domain.Constants.thEdgeVzL2;
 import org.jlab.groot.base.TStyle;
@@ -132,7 +134,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     private Map<Coordinate, DCFitDrawerForXDocaXTB> mapOfFitLinesXTB = new HashMap<Coordinate, DCFitDrawerForXDocaXTB>();
 
     private H1F h1bField;
-    private H1F [] h1bFieldSL = new H1F[nSL];
+    private H1F[] h1bFieldSL = new H1F[nSL];
     private H1F h1fitChisqProb, h1fitChi2Trk, h1fitChi2Trk2, h1ndfTrk, h1zVtx;
     private H2F testHist, h2ResidualVsTrkDoca;
     private H1F h1trkDoca4NegRes, h1trkDoca4PosRes;//Temp, 4/27/17
@@ -153,7 +155,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     private DCTabbedPane dcTabbedPane;
 
     // MK testing
-    private NTuple nTupletimeVtrkDocaVZ;
+//    private NTuple nTupletimeVtrkDocaVZ;
     double[] tupleVars;
 
     public TimeToDistanceFitter(ArrayList<String> files, boolean isLinearFit) {
@@ -162,7 +164,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         this.readerH = new HipoDataSource();
         this.dcTabbedPane = new DCTabbedPane("PooperDooper");
         this.isLinearFit = isLinearFit;
-        this.nTupletimeVtrkDocaVZ = new NTuple("testData", "Sector:SuperLayer:ThetaBin:Doca:Time");
+//        this.nTupletimeVtrkDocaVZ = new NTuple("testData", "Sector:SuperLayer:ThetaBin:Doca:Time");
         this.tupleVars = new double[5];
 
         createVerticalLinesForDMax();
@@ -175,7 +177,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         this.reader = new EvioDataChain();
         this.readerH = new HipoDataSource();
         this.dcTabbedPane = new DCTabbedPane("PooperDooper");
-        this.nTupletimeVtrkDocaVZ = new NTuple("testData", "Sector:SuperLayer:ThetaBin:Doca:Time");
+//        this.nTupletimeVtrkDocaVZ = new NTuple("testData", "Sector:SuperLayer:ThetaBin:Doca:Time");
         this.tupleVars = new double[5];
         this.isLinearFit = isLinearFit;
 
@@ -191,7 +193,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         for (int i = 0; i < nSL; i++) {
             vertLineDmax[i] = new GraphErrors();
             vertLineDmaxCos30[i] = new GraphErrors();
-            
+
             //Drawing an array of points (as I didn't know how to draw the lines to join them)
 //            for (int j = 0; j < 20; j++) {
 //                vertLineDmax[i].addPoint(2 * wpdist[i], j * 5, 0, 0);
@@ -199,18 +201,17 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 //            }
 //            vertLineDmax[i].setMarkerSize(2);
 //            vertLineDmaxCos30[i].setMarkerSize(2);
-              
             //Drawing the line as the error bar of a single point graph (with zero size for marker)
             vertLineDmax[i].addPoint(2 * wpdist[i], 50, 0, 50);
             vertLineDmaxCos30[i].addPoint(2 * wpdist[i] * cos30, 50, 0, 50);
             vertLineDmax[i].setMarkerSize(0);
             vertLineDmaxCos30[i].setMarkerSize(0);
-            
-            vertLineDmax[i].setMarkerColor(2);            
+
+            vertLineDmax[i].setMarkerColor(2);
             vertLineDmax[i].setLineColor(2);
             vertLineDmax[i].setLineThickness(1);
 
-            vertLineDmaxCos30[i].setMarkerColor(2);            
+            vertLineDmaxCos30[i].setMarkerColor(2);
             vertLineDmaxCos30[i].setLineColor(2);
             vertLineDmaxCos30[i].setLineThickness(1);
 
@@ -233,10 +234,10 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
             }
         }
     }
-       
+
     private void createHists() {
         initializeBFieldHistograms();
-        
+
         h1fitChisqProb = new H1F("fitChisqProb", 120, 0.0, 1.2);
         h1fitChisqProb.setTitle("fitChisqProb");
         h1fitChisqProb.setLineColor(2);
@@ -283,14 +284,15 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
             h1ThSL.get(new Coordinate(i)).setTitle(hTtl);
             h1ThSL.get(new Coordinate(0)).setLineColor(i + 1);
         }
-
-        for (int i = 0; i < nSL; i++) {
-            for (int k = 0; k < nTh; k++) {
-                hNm = String.format("timeSL%dThBn%d", i, k);
-                h1timeSlTh.put(new Coordinate(i, k), new H1F(hNm, 200, -10.0, 190.0));
-                hTtl = String.format("time (SL=%d, th(%.1f,%.1f)", i + 1, thBins[k], thBins[k + 1]);
-                h1timeSlTh.get(new Coordinate(i, k)).setTitleX(hTtl);
-                h1timeSlTh.get(new Coordinate(i, k)).setLineColor(i + 1);
+        for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)
+            for (int j = 0; j < nSL; j++) {
+                for (int k = 0; k < nThBinsVz; k++) {
+                    hNm = String.format("timeS%dSL%dThBn%d", i, j, k);
+                    h1timeSlTh.put(new Coordinate(i, j, k), new H1F(hNm, 200, tMin, 190.0)); //-10.0, 190.0));
+                    hTtl = String.format("time (S=%d, SL=%d, th(%.1f,%.1f)", i + 1, j+1, thEdgeVzL[k], thEdgeVzH[k]);
+                    h1timeSlTh.get(new Coordinate(i, j, k)).setTitleX(hTtl);
+                    h1timeSlTh.get(new Coordinate(i, j, k)).setLineColor(j + 1);
+                }
             }
         }
 
@@ -417,7 +419,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     // 40, and 50 degs
                     hNm = String.format("Sector %d timeVnormDocaS%dTh%02d", i, j, k);
                     //h2timeVtrkDocaVZ.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.0, 150, 0.0, 200.0));
-                    h2timeVtrkDocaVZ.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.0, 150, 0.0, timeAxisMax[j]));
+                    h2timeVtrkDocaVZ.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.0, 150, tMin, timeAxisMax[j]));
 
                     hTtl = String.format("time vs. |normDoca| (Sec=%d, SL=%d, th(%2.1f,%2.1f))", i, j + 1, thEdgeVzL[k], thEdgeVzH[k]);
                     h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).setTitle(hTtl);
@@ -427,7 +429,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     hNm = String.format("Sector %d timeVtrkDocaS%dTh%02d", i, j, k);
                     //h2timeVtrkDocaVZ.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.0, 150, 0.0, 200.0));
                     //h2timeVtrkDoca.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.2 * dMax, 150, 0.0, timeAxisMax[j]));
-                    h2timeVtrkDoca.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.2 * dMax, 150, 0.0, timeAxisMax[j]));
+                    h2timeVtrkDoca.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.2 * dMax, 150, tMin, timeAxisMax[j]));
 
                     hTtl = String.format("time vs. |Doca| (Sec=%d, SL=%d, th(%2.1f,%2.1f))", i, j + 1, thEdgeVzL[k], thEdgeVzH[k]);
                     h2timeVtrkDoca.get(new Coordinate(i, j, k)).setTitle(hTtl);
@@ -435,7 +437,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     h2timeVtrkDoca.get(new Coordinate(i, j, k)).setTitleY("Time (ns)");
 
                     hNm = String.format("Sector %d timeVcalcDocaS%dTh%02d", i, j, k);
-                    h2timeVcalcDoca.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.2 * dMax, 150, 0.0, timeAxisMax[j]));
+                    h2timeVcalcDoca.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.2 * dMax, 150, tMin, timeAxisMax[j]));
 
                     hTtl = String.format("time vs. |calcDoca| (Sec=%d, SL=%d, th(%2.1f,%2.1f))", i, j + 1, thEdgeVzL[k], thEdgeVzH[k]);
                     h2timeVcalcDoca.get(new Coordinate(i, j, k)).setTitle(hTtl);
@@ -458,7 +460,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                 //SimpleH3D> h3BTXmap
                 for (int k = 0; k < nThBinsVz2; k++) {
                     //hNm = String.format("Sector %d BvTvXS%dTh%02d", i, j, k);
-                    h3BTXmap.put(new Coordinate(i, j, k), new SimpleH3D(100, 0.0, 1.2 * dMax, 100, 0.0, timeAxisMax[j], 60, 0.0, 1.2));
+                    h3BTXmap.put(new Coordinate(i, j, k), new SimpleH3D(100, 0.0, 1.2 * dMax, 100, tMin, timeAxisMax[j], 60, 0.0, 1.2));
                     //h3BTXmapVZ.put(new Coordinate(i, j, k), new SimpleH3D(100, 0.0, 1.0, 100, 0.0, timeAxisMax[j], 60, 0.0, 1.2));
                 }
             }
@@ -467,6 +469,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)            
             for (int j = 0; j < nSL; j++) {
                 dMax = 2 * wpdist[j];
+
+                //Following is used for all angle-bins combined
                 hNm = String.format("timeResS%dSL%d", i, j);
                 h1timeRes.put(new Coordinate(i, j), new H1F(hNm, 200, -1.0, 1.0));
                 hTtl = String.format("residual (cm) (Sec=%d, SL=%d)", i, j + 1);
@@ -480,6 +484,23 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                 h2timeResVsTrkDoca.get(new Coordinate(i, j)).setTitle(hTtl);
                 h2timeResVsTrkDoca.get(new Coordinate(i, j)).setTitleX("|trkDoca|");
                 h2timeResVsTrkDoca.get(new Coordinate(i, j)).setTitleY("residual");
+
+                //Following is used for individual angle bins
+                for (int k = 0; k < nThBinsVz; k++) {
+                    hNm = String.format("timeResS%dSL%dTh%02d", i, j, k);
+                    h1timeRes.put(new Coordinate(i, j, k), new H1F(hNm, 200, -1.0, 1.0));
+                    hTtl = String.format(" Sec=%d, SL=%d, Th(%2.1f,%2.1f)", i, j + 1, thEdgeVzL[k], thEdgeVzH[k]);
+                    h1timeRes.get(new Coordinate(i, j, k)).setTitle(hTtl);
+                    h1timeRes.get(new Coordinate(i, j, k)).setTitleX("residual");
+
+                    //h2timeResVsTrkDoca
+                    hNm = String.format("timeResVsTrkDocaS%dSL%d", i, j, k);
+                    h2timeResVsTrkDoca.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.2 * dMax, 200, -1.0, 1.0));
+                    hTtl = String.format("Sec=%d, SL=%d, Th(%2.1f,%2.1f)", i, j + 1, thEdgeVzL[k], thEdgeVzH[k]);
+                    h2timeResVsTrkDoca.get(new Coordinate(i, j, k)).setTitle(hTtl);
+                    h2timeResVsTrkDoca.get(new Coordinate(i, j, k)).setTitleX("|trkDoca|");
+                    h2timeResVsTrkDoca.get(new Coordinate(i, j, k)).setTitleY("residual");
+                }
             }
         }
     }
@@ -488,20 +509,20 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         //Overall for SL=3 & 4
         h1bField = new H1F("Bfield", bFieldBins, bFieldMin, bFieldMax);
         h1bField.setTitle("B field");
-        h1bField.setLineColor(2); 
-        
+        h1bField.setLineColor(2);
+
         //For each of the 6 SLs
         String hName = "", hTitle = "";
         for (int i = 0; i < nSL; i++) {
-            String.format(hName, "BfieldSL%d", i+1);            
-            h1bFieldSL[i]  = new H1F(hName, 4*bFieldBins, bFieldMin, bFieldMax); 
-            String.format(hTitle, "B field for SL=%d", i+1);
+            String.format(hName, "BfieldSL%d", i + 1);
+            h1bFieldSL[i] = new H1F(hName, 4 * bFieldBins, bFieldMin, bFieldMax);
+            String.format(hTitle, "B field for SL=%d", i + 1);
             h1bField.setTitle(hTitle);
-            h1bField.setLineColor(2);            
+            h1bField.setLineColor(2);
         }
-            
-    }    
-    
+
+    }
+
     protected void processData() {
         int counter = 0;
         int icounter = 0;
@@ -761,10 +782,12 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     Double gTimeRes = timeResMapTBHits.get(new Integer(bnkSegs.getInt("Hit" + h + "_ID", j)));
                     Double gBfield = BMapTBHits.get(new Integer(bnkSegs.getInt("Hit" + h + "_ID", j)));
                     
+
                     if (gTime == null || gTrkDoca == null && gBfield == null) {
                         continue;
                     }
-                    
+                    double gCalcDocaNorm = gCalcDoca/docaMax;
+
                     //============ For Temp purpose
                     boolean inBfieldBin = true; //For SL=3 & 4, using only data that correspond to Bfield = (0.4,0.6)
                     if ((superlayer == 3 || superlayer == 4) && (gBfield < 0.4 || gBfield > 0.6)) {
@@ -772,35 +795,41 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     }
                     //This allows to use an average default value of 0.5 Tesla for B-field in classes such as DCTimeFunction
                     //============ Temp                    
-                    
-                    if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBn > -1 && thBn < nTh) {
-                        h1timeSlTh.get(new Coordinate(superlayer - 1, thBn)).fill(gTime);
-                    }
 
-                    if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBnVz > -1 && thBnVz < nThBinsVz && inBfieldBin == true) {// && thBnVz < nThBinsVz
-                        double docaNorm = gTrkDoca / docaMax;
-                        h2timeVtrkDocaVZ.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(docaNorm), gTime);
-                        h2timeVtrkDoca.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(gTrkDoca), gTime);
-                        h2timeVcalcDoca.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(gCalcDoca), gTime);
-                        if (Math.abs(thDeg) < 30.0) {
-                            h1timeRes.get(new Coordinate(sector - 1, superlayer - 1)).fill(gTimeRes);
-                            h2timeResVsTrkDoca.get(new Coordinate(sector - 1, superlayer - 1)).fill(Math.abs(gTrkDoca), gTimeRes);
-                            h2ResidualVsTrkDoca.fill(gTrkDoca, gTimeRes);
-                            if (gTimeRes > 0.0) {
-                                h1trkDoca4PosRes.fill(gTrkDoca);
-                            } else {
-                                h1trkDoca4NegRes.fill(gTrkDoca);
+//                    if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBn > -1 && thBn < nTh) {
+//                        h1timeSlTh.get(new Coordinate(superlayer - 1, thBn)).fill(gTime);
+//                    }
+                    
+                    if (gCalcDocaNorm < calcDocaCut) { //1.0) { //0.85) { //kp: 6/7/17
+                        if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBnVz > -1 && thBnVz < nThBinsVz && inBfieldBin == true) {// && thBnVz < nThBinsVz
+                            double docaNorm = gTrkDoca / docaMax;
+                            h2timeVtrkDocaVZ.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(docaNorm), gTime);
+                            h2timeVtrkDoca.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(gTrkDoca), gTime);
+                            h2timeVcalcDoca.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(gCalcDoca), gTime);
+                            if (Math.abs(thDeg) < 30.0) {
+                                h1timeSlTh.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(gTime);
+                                //Following two for all angle-bins combined (but for individual superlayers in each sector)
+                                h1timeRes.get(new Coordinate(sector - 1, superlayer - 1)).fill(gTimeRes);
+                                h2timeResVsTrkDoca.get(new Coordinate(sector - 1, superlayer - 1)).fill(Math.abs(gTrkDoca), gTimeRes);
+                                //Following tow for individual angular bins as well.
+                                h1timeRes.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(gTimeRes);
+                                h2timeResVsTrkDoca.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(gTrkDoca), gTimeRes);
+                                h2ResidualVsTrkDoca.fill(gTrkDoca, gTimeRes);
+                                if (gTimeRes > 0.0) {
+                                    h1trkDoca4PosRes.fill(gTrkDoca);
+                                } else {
+                                    h1trkDoca4NegRes.fill(gTrkDoca);
+                                }
                             }
                         }
-                    }
 
-                    if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBnVz2 > -1 && thBnVz2 < nThBinsVz2) {
-                        double docaNorm = gTrkDoca / docaMax;
-                        //System.out.print("B-fill: "+ sector+" "+superlayer+" "+thBnVz2+" "+gTrkDoca+" "+gTime+" "+gBfield);
-                        h3BTXmap.get(new Coordinate(sector - 1, superlayer - 1, thBnVz2)).fill(Math.abs(gTrkDoca), gTime, gBfield);
-                        //System.out.println("  la la ..");
+                        if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBnVz2 > -1 && thBnVz2 < nThBinsVz2) {
+                            double docaNorm = gTrkDoca / docaMax;
+                            //System.out.print("B-fill: "+ sector+" "+superlayer+" "+thBnVz2+" "+gTrkDoca+" "+gTime+" "+gBfield);
+                            h3BTXmap.get(new Coordinate(sector - 1, superlayer - 1, thBnVz2)).fill(Math.abs(gTrkDoca), gTime, gBfield);
+                            //System.out.println("  la la ..");
+                        }
                     }
-
                     // here I will fill a test histogram of superlay6 and thetabin6
                     if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBnVz == 5 && superlayer == 6) {
                         double docaNorm = gTrkDoca / docaMax;
@@ -809,7 +838,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                         tupleVars[2] = (double) thBnVz;
                         tupleVars[3] = Math.abs(docaNorm);
                         tupleVars[4] = gTime;
-                        nTupletimeVtrkDocaVZ.addRow(tupleVars);
+//                        nTupletimeVtrkDocaVZ.addRow(tupleVars);
                         testHist.fill(Math.abs(docaNorm), gTime);
                     }
 
@@ -820,8 +849,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     }
 
     protected void runFitterAndDrawPlots(JFrame frame, JTextArea textArea, int Sec, int SL,
-            int xMeanErrorType, double xNormLow, double xNormHigh,
-            boolean[] fixIt, boolean checkBoxFixAll, double[][] pLow, double[][] pInit, double[][] pHigh) {
+            int xMeanErrorType, double xNormLow, double xNormHigh, boolean[] fixIt, boolean checkBoxFixAll, 
+            double[][] pLow, double[][] pInit, double[][] pHigh, double[][] pSteps, boolean [] selectedAngleBins) {
         System.out.println(String.format("%s %d %d %d %2.1f %2.1f",
                 "Selected values of Sector Superlayer errorType xNorm(Min,Max) are:",
                 Sec, SL, xMeanErrorType, xNormLow, xNormHigh));
@@ -833,11 +862,12 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         }
 
         System.out.println("Called createCanvasMaps(); ");
-//        drawQuickTestPlots();
-//        System.out.println("Called drawQuickTestPlots();");
+        drawQuickTestPlots();
+        System.out.println("Called drawQuickTestPlots();");
 
         try {
-            runFitterNew(textArea, Sec, SL, xMeanErrorType, xNormLow, xNormHigh, fixIt, checkBoxFixAll, pLow, pInit, pHigh);
+            runFitterNew(textArea, Sec, SL, xMeanErrorType, xNormLow, xNormHigh, fixIt, checkBoxFixAll, pLow, 
+                    pInit, pHigh, pSteps, selectedAngleBins);
         } catch (IOException ex) {
             Logger.getLogger(TimeToDistanceFitter.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -845,18 +875,18 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         createFitLinesNew(Sec, SL);
         System.out.println("Fit lines are prepared.");
         drawFitLinesNew(frame, Sec, SL);
-
     }
+    
 
     protected void runFitterNew(JTextArea textArea, int Sec, int SL, int xMeanErrorType,
             double xNormLow, double xNormHigh, boolean[] fixIt, boolean checkBoxFixAll,
-            double[][] pLow, double[][] pInit, double[][] pHigh) throws IOException {
-        
+            double[][] pLow, double[][] pInit, double[][] pHigh, double [][] pSteps, boolean [] selectedAngleBins) throws IOException {
+
         System.out.println("Inside runFitterNew(..) ");
         int iSec = Sec - 1, iSL = SL - 1;
         boolean append_to_file = false;
         FileOutputWriter file = null;
-        String str = " ";
+        String str = " ", pStr = " ";
         try {
             file = new FileOutputWriter("src/files/fitParameters.txt", append_to_file);
             file.Write("#Sec  SL  v0  deltanm  tMax  distbeta  delta_bfield_coefficient  b1  b2  b3  b4");
@@ -864,45 +894,42 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
             Logger.getLogger(TimeToDistanceFitter.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        int nFreePars = 4;
-        if (histTypeToUseInFitting == 3) {
-            nFreePars = 9;
-        }
+        int nFreePars = nFitPars; //9;//4;
+//        if (histTypeToUseInFitting == 3) {
+//            nFreePars = 9;
+//        }
 
         double[][][] pars2write = new double[nSectors][nSL][nFitPars];//nFitPars = 9
-
-        // initial guess of tMax for the 6 superlayers (cell sizes are different for each)
-        // This is one of the free parameters (par[2], but fixed for now.)
-        //double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 }; //Moved to Constants.java
-        // Now start minimization
-        double parSteps[] = {0.00001, 0.001, 0.01, 0.0001, 0.001, 0.001, 0.001, 0.001, 0.001};
+        //double parSteps[] = {0.00001, 0.001, 0.01, 0.0001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001};
 
         Map<Coordinate, MnUserParameters> mapTmpUserFitParameters = new HashMap<Coordinate, MnUserParameters>();
-        double prevFitPar = 0.0;
+        
 
         if (histTypeToUseInFitting < 2) {
             mapOfFitFunctions.put(new Coordinate(iSec, iSL),
                     //new DCFitFunction(h2timeVtrkDocaVZ, iSec, iSL, isLinearFit));
-                    new DCFitFunction(h2timeVtrkDoca, iSec, iSL, xMeanErrorType, xNormLow, xNormHigh, isLinearFit));//Using map of H2F
+                    new DCFitFunction(h2timeVtrkDoca, iSec, iSL, xMeanErrorType, xNormLow, xNormHigh, isLinearFit, selectedAngleBins));//Using map of H2F
         } else if (histTypeToUseInFitting > 1) {
             mapOfFitFunctions.put(new Coordinate(iSec, iSL),
-                    new DCFitFunction(h3BTXmap, iSec, iSL, xMeanErrorType, xNormLow, xNormHigh, isLinearFit, true)); //Using map of SimpleH3D
+                    new DCFitFunction(h3BTXmap, iSec, iSL, xMeanErrorType, xNormLow, xNormHigh, isLinearFit, selectedAngleBins, true)); //Using map of SimpleH3D
         }
+        
         mapOfFitParameters.put(new Coordinate(iSec, iSL), new MnUserParameters());
-        for (int p = 0; p < nFreePars; p++) {
-            //mapOfFitParameters.get(new Coordinate(iSec, iSL)).add(parName[p], prevFitPar, parSteps[p], pLow[iSL][p], pHigh[iSL][p]);
-            mapOfFitParameters.get(new Coordinate(iSec, iSL)).add(parName[p], pInit[iSL][p], parSteps[p], pLow[iSL][p], pHigh[iSL][p]);
+        
+        for (int p = 0; p < nFreePars; p++) {            
+            mapOfFitParameters.get(new Coordinate(iSec, iSL)).add(parName[p], pInit[iSL][p], pSteps[iSL][p], pLow[iSL][p], pHigh[iSL][p]);
+            //mapOfFitParameters.get(new Coordinate(iSec, iSL)).add(parName[p], pInit[iSL][p], parSteps[p], pLow[iSL][p], pHigh[iSL][p]);
             if (fixIt[p] == true) {
                 mapOfFitParameters.get(new Coordinate(iSec, iSL)).fix(p);
             }
         }
 
         System.out.println("Debug1");
-        
+
         double[] fPars = new double[nFreePars];
         double[] fErrs = new double[nFreePars];
         //Following is to ensure that initial values are written as output if all parameters are fixed i.e. when checkBoxFixAll == true;
-        for (int p = 0; p < nFreePars; p++) {
+        for (int p = 0; p < nFreePars; p++) { //Don't delete
             fPars[p] = pInit[iSL][p];
         }
 
@@ -928,35 +955,41 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
             }
         }
 
+        pStr = "  ";
         for (int p = 0; p < nFreePars; p++) {
             pars2write[iSec][iSL][p] = fPars[p];
+            pStr = String.format("%s %5.4f ", pStr, fPars[p]);
         }
-        System.out.println("Debug2"); 
+        str = String.format("%d %d %s", iSec + 1, iSL + 1, pStr);
         
-        mapOfUserFitParameters.put(new Coordinate(iSec, iSL), fPars);
+        System.out.println("Debug2");
 
-        if (!(file == null)) {
-            str = String.format("%d %d %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f",
-                    iSec + 1, iSL + 1, pars2write[iSec][iSL][0], pars2write[iSec][iSL][1], pars2write[iSec][iSL][2],
-                    pars2write[iSec][iSL][3], pars2write[iSec][iSL][4], pars2write[iSec][iSL][5],
-                    pars2write[iSec][iSL][6], pars2write[iSec][iSL][7], pars2write[iSec][iSL][8]);
+        mapOfUserFitParameters.put(new Coordinate(iSec, iSL), fPars);
+                
+        if (!(file == null)) {            
             file.Write(str);
             textArea.append(str + "\n"); //Show the results in the text area of fitControlUI
-        }
-        if (!(file == null)) {
             file.Close();
         }
+
+        if (nFreePars > 9) {
+            System.out.println("deltaT0 determined from the time-to-distance fit: " + fPars[9]);
+            ReadT0parsFromCCDB readT0 = new ReadT0parsFromCCDB("dc_test1");
+            //readT0.printCurrentT0s();
+            readT0.printModifiedT0s(iSec+1, iSL+1, fPars[9]);
+            readT0.writeOutModifiedT0s(iSec+1, iSL+1, fPars[9]);
+        }
+
         System.out.println("End of runFitterNew(..) ");
     }
 
+    
+    
+    
     private void createFitLinesNew(int Sec, int SL) {
         int iSec = Sec - 1, iSL = SL - 1;
         double bField = 0.0;
-        double dMax;
-        //for (int i = 0; i < nSectors; i++) {
-        //for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)
-        //for (int j = 0; j < nSL; j++) {
-        dMax = 2 * wpdist[iSL];
+        double dMax = 2 * wpdist[iSL];
         for (int k = 0; k < nThBinsVz; k++) {
             String title = "timeVsNormDoca Sec=" + (iSec + 1) + " SL=" + (iSL + 1) + " Th=" + k;
             double maxFitValue = h2timeVtrkDocaVZ.get(new Coordinate(iSec, iSL, k)).getDataX(getMaximumFitValue(iSec, iSL, k));
@@ -980,35 +1013,21 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                 //  be clumsy to show the T-vs-X 2D histograms corresponding to all the B-bins.
                 // So, for a quick test, I decided to draw for only one bin ( or may be couple more bins later)
                 bField = h3BTXmap.get(new Coordinate(iSec, iSL, k)).getBinCenterZ(binForTestPlotTemp);
-            }
-            if (histTypeToUseInFitting == 3) {
-                mapOfFitLinesX.put(new Coordinate(iSec, iSL, k), new DCFitDrawerForXDoca(title, 0.0, dMax, iSL, k, bField, isLinearFit));
             } else {
-                mapOfFitLinesX.put(new Coordinate(iSec, iSL, k), new DCFitDrawerForXDoca(title, 0.0, dMax, iSL, k, isLinearFit));
+                bField = 0.5; //For now I am using only events with B(0.4,0.6) for SL=3/4 (6/5/17)
             }
+            
+            mapOfFitLinesX.put(new Coordinate(iSec, iSL, k), new DCFitDrawerForXDoca(title, 0.0, dMax, iSL, k, bField, isLinearFit));
+            
             mapOfFitLinesX.get(new Coordinate(iSec, iSL, k)).setLineColor(1);//(colSimulFit);//(2);
-            mapOfFitLinesX.get(new Coordinate(iSec, iSL, k)).setLineWidth(2);
+            mapOfFitLinesX.get(new Coordinate(iSec, iSL, k)).setLineWidth(3);
             mapOfFitLinesX.get(new Coordinate(iSec, iSL, k)).setLineStyle(3);
             //mapOfFitLines.get(new Coordinate(iSec, iSL, k)).setParameters(mapOfUserFitParameters.get(new Coordinate(iSec, iSL, k)));
             //Because we do the simultaneous fit over all theta bins, we have the same set of pars for all theta-bins.
             mapOfFitLinesX.get(new Coordinate(iSec, iSL, k)).setParameters(mapOfUserFitParameters.get(new Coordinate(iSec, iSL)));
         }
-        //}
-        //}
-
     }
 
-    private void makeTimeFitResiduals(int Sec, int SL) {
-        int iSec = Sec - 1, iSL = SL - 1;
-        for (int k = 0; k < nThBinsVz; k++) {
-            H2F h2tmp = h2timeVtrkDoca.get(new Coordinate(iSec, iSL, k));
-            //h2tmp.add
-            for (int l = 0; l < 10; l++) {
-
-            }
-        }
-        //h2timeFitResVtrkDoca, h1timeFitRes
-    }
 
     private void drawFitLinesNew(JFrame fitControlFrame, int Sec, int SL) {
         int iSec = Sec - 1, iSL = SL - 1;
@@ -1084,56 +1103,122 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         }
         tabbedPane.add(canvas3, "t vs calcDoca");
 
+        JFrame frame = new JFrame();
+        Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
+        frame.setSize((int) (screensize.getWidth() * .9), (int) (screensize.getHeight() * .9));
+        //frame.setLocationRelativeTo(null); //Centers on the default screen
+        //Following line makes the canvas or frame open in the same screen where the fitCtrolUI is.
+        frame.setLocationRelativeTo(fitControlFrame);//centered w.r.t fitControlUI frame
+        frame.add(tabbedPane);//(canvas);
+        frame.setVisible(true);
+    }        
+        
+        
+    public void showResidualDistributions(JFrame fitControlFrame, int Sec, int SL, double xNormLow, double xNormHigh) {
+        int iSec = Sec - 1, iSL = SL - 1;
+        int nSkippedThBins = 4; //Skipping marginal 4 bins from both sides
+        String Title = "";
+
+        JTabbedPane tabbedPane = new JTabbedPane();
         //============= Residual plots
         F1D[][] func = new F1D[nSectors][nSL];
         int iPad = 0;
-        JTabbedPane sectorPanes = new JTabbedPane();
-        //for (int i = iSecMin; i < iSecMax; i++) {
-            //JTabbedPane resPanes = new JTabbedPane(); //this pane will have two tabs for 1D & 2D res (using canvas & canvas2)
-            EmbeddedCanvas canvas4 = new EmbeddedCanvas(); //Will provide tab for 1D res.
-            canvas4.setSize(3 * 400, 2 * 400);
-            canvas4.divide(3, 2);
-            for (int j = 0; j < nSL; j++) {
-                Title = "Sec=" + (iSec + 1) + " SL=" + (j + 1);
-                iPad = j;
-                canvas4.cd(iPad);
-                H1F h1 = h1timeRes.get(new Coordinate(iSec, j));
-                func[iSec][j] = new F1D("func", "[amp]*gaus(x,[mean],[sigma])", -0.11, 0.11);
-                func[iSec][j].setLineColor(2);
-                func[iSec][j].setLineStyle(1);
-                func[iSec][j].setLineWidth(2);
-                func[iSec][j].setParameter(0, 1000);
-                func[iSec][j].setParameter(1, -0.0);
-                func[iSec][j].setParameter(2, 0.2);
-                func[iSec][j].setOptStat(1110);
-                func[iSec][j].show(); //Prints fit parameters                    
-                //DataFitter.fit(func[iSec][j], h1, "E");
-                
-                canvas4.draw(h1);
-                canvas4.getPad(iPad).setTitle(Title);
-                canvas4.setPadTitlesX("residual (cm)");//"Residual vs trkDoca"
-            }
-            //canvas4.save(String.format("src/images/residualSec%d.png", i + 1));
-            tabbedPane.add(canvas4, "residual (cm)");
+        //Following two tabs are for overall residuals (1D & 2D) for the given sector and SL
+        EmbeddedCanvas canvas4 = new EmbeddedCanvas(); //Will provide tab for 1D res.
+        canvas4.setSize(3 * 400, 2 * 400);
+        canvas4.divide(3, 2);
+        for (int j = 0; j < nSL; j++) {
+            Title = "Sec=" + (iSec + 1) + " SL=" + (j + 1);
+            iPad = j;
+            canvas4.cd(iPad);
+            H1F h1 = h1timeRes.get(new Coordinate(iSec, j));
+            func[iSec][j] = new F1D("func", "[amp]*gaus(x,[mean],[sigma])", -0.07, 0.07);
+            func[iSec][j].setLineColor(2);
+            func[iSec][j].setLineStyle(1);
+            func[iSec][j].setLineWidth(2);
+            func[iSec][j].setParameter(0, 1000);
+            func[iSec][j].setParameter(1, 0.0);
+            func[iSec][j].setParameter(2, 0.05);//500 micron            
+            func[iSec][j].show(); //Prints fit parameters                    
+            DataFitter.fit(func[iSec][j], h1, "E");
+            func[iSec][j].setOptStat(1110);//(1110000111);//(1110);
+            h1.setOptStat(1110);//(1110001111);//(1110);
 
-            EmbeddedCanvas canvas5 = new EmbeddedCanvas();
-            canvas5.setSize(3 * 400, 2 * 400);
-            canvas5.divide(3, 2);
-            for (int j = 0; j < nSL; j++) {
-                Title = "Sec=" + (iSec + 1) + " SL=" + (j + 1);
-                iPad = j;
-                canvas5.cd(iPad);
-                canvas5.getPad(iPad).getAxisZ().setLog(true);
-                canvas5.draw(h2timeResVsTrkDoca.get(new Coordinate(iSec, j)));
-                canvas5.getPad(iPad).setTitle(Title);
-                canvas5.setPadTitlesX("|trkDoca| (cm)");
-                canvas5.setPadTitlesY("residual (cm)");
-            }
-            //canvas5.save(String.format("src/images/residualVsTrkDocaSec%d.png", i + 1));
-            tabbedPane.add(canvas5, "Residual vs trkDoca"); //Second tab in the resPanes
-        //}     
-        //=============
+            canvas4.draw(h1);
+            canvas4.getPad(iPad).setTitle(Title);
+            canvas4.setPadTitlesX("residual (cm)");//"Residual vs trkDoca"
+        }
+        //canvas4.save(String.format("src/images/residualSec%d.png", i + 1));
+        tabbedPane.add(canvas4, "residual (cm)");
+
+        EmbeddedCanvas canvas5 = new EmbeddedCanvas();
+        canvas5.setSize(3 * 400, 2 * 400);
+        canvas5.divide(3, 2);
+        for (int j = 0; j < nSL; j++) {
+            Title = "Sec=" + (iSec + 1) + " SL=" + (j + 1);
+            iPad = j;
+            canvas5.cd(iPad);
+            canvas5.getPad(iPad).getAxisZ().setLog(true);
+            canvas5.draw(h2timeResVsTrkDoca.get(new Coordinate(iSec, j)));
+            canvas5.getPad(iPad).setTitle(Title);
+            canvas5.setPadTitlesX("|trkDoca| (cm)");
+            canvas5.setPadTitlesY("residual (cm)");
+        }
+        //canvas5.save(String.format("src/images/residualVsTrkDocaSec%d.png", i + 1));
+        tabbedPane.add(canvas5, "Residual vs trkDoca"); //Second tab in the resPanes
+      
         
+        //Following two tabs are for individual residuals (1D & 2D) for the given sec, SL & th-bin
+        F1D[][][] funcTh = new F1D[nSectors][nSL][nThBinsVz];
+        EmbeddedCanvas canvas6 = new EmbeddedCanvas(); //Will provide tab for 1D res.
+        canvas6.setSize(3 * 400, 3 * 400);
+        canvas6.divide(3, 3);
+        for (int k = nSkippedThBins; k < nThBinsVz - nSkippedThBins; k++) {            
+        //for (int j = 0; j < nSL; j++) {
+            Title = "Sec=" + (iSec + 1) + " SL=" + (iSL + 1) 
+                    + " th(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
+            iPad = k - nSkippedThBins; //= iSL;
+            canvas6.cd(iPad);
+            H1F h1 = h1timeRes.get(new Coordinate(iSec, iSL, k));
+            funcTh[iSec][iSL][k] = new F1D("func", "[amp]*gaus(x,[mean],[sigma])", -0.07, 0.07);
+            funcTh[iSec][iSL][k].setLineColor(2);
+            funcTh[iSec][iSL][k].setLineStyle(1);
+            funcTh[iSec][iSL][k].setLineWidth(2);
+            funcTh[iSec][iSL][k].setParameter(0, 1000);
+            funcTh[iSec][iSL][k].setParameter(1, -0.0);
+            funcTh[iSec][iSL][k].setParameter(2, 0.05);
+            funcTh[iSec][iSL][k].setOptStat(1110);
+            funcTh[iSec][iSL][k].show(); //Prints fit parameters                    
+            DataFitter.fit(funcTh[iSec][iSL][k], h1, "E");
+            funcTh[iSec][iSL][k].setOptStat(1110);//(1110000111);//(1110);
+            h1.setOptStat(1110);//(1110001111);//(1110);
+            
+            canvas6.draw(h1);
+            canvas6.getPad(iPad).setTitle(Title);
+            canvas6.setPadTitlesX("residual (cm)");//"Residual vs trkDoca"
+        }
+        //canvas4.save(String.format("src/images/residualSec%d.png", i + 1));
+        tabbedPane.add(canvas6, "residual (cm) (In ThBins)");
+
+        EmbeddedCanvas canvas7 = new EmbeddedCanvas();
+        canvas7.setSize(3 * 400, 3 * 400);
+        canvas7.divide(3, 3);
+        for (int k = nSkippedThBins; k < nThBinsVz - nSkippedThBins; k++) {            
+        //for (int j = 0; j < nSL; j++) {
+            Title = "Sec=" + (iSec + 1) + " SL=" + (iSL + 1) 
+                    + " th(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
+            iPad = k - nSkippedThBins; //= iSL;
+            canvas7.cd(iPad);
+            canvas7.getPad(iPad).getAxisZ().setLog(true);
+            canvas7.draw(h2timeResVsTrkDoca.get(new Coordinate(iSec, iSL, k)));
+            canvas7.getPad(iPad).setTitle(Title);
+            canvas7.setPadTitlesX("|trkDoca| (cm)");
+            canvas7.setPadTitlesY("residual (cm)");
+        }
+        //canvas5.save(String.format("src/images/residualVsTrkDocaSec%d.png", i + 1));
+        tabbedPane.add(canvas7, "Res. vs trkDoca (In ThBins)"); 
+        //=============
+
         JFrame frame = new JFrame();
         Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
         frame.setSize((int) (screensize.getWidth() * .9), (int) (screensize.getHeight() * .9));
@@ -1144,6 +1229,68 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         frame.setVisible(true);
     }
 
+    public void showTimeDistributions(JFrame fitControlFrame, int Sec, int SL, double xNormLow, double xNormHigh) {
+        int iSec = Sec - 1, iSL = SL - 1;
+        int nSkippedThBins = 4; //Skipping marginal 4 bins from both sides
+        String Title = "";
+
+        JTabbedPane tabbedPane = new JTabbedPane();
+        //============= Residual plots
+        F1D[][] func = new F1D[nSectors][nSL];
+        int iPad = 0;
+        
+        EmbeddedCanvas canvas7 = new EmbeddedCanvas();
+        canvas7.setSize(3 * 400, 3 * 400);
+        canvas7.divide(3, 3);
+        for (int k = nSkippedThBins; k < nThBinsVz - nSkippedThBins; k++) {            
+        //for (int j = 0; j < nSL; j++) {
+            Title = "Sec=" + (iSec + 1) + " SL=" + (iSL + 1) 
+                    + " th(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
+            iPad = k - nSkippedThBins; //= iSL;
+            canvas7.cd(iPad);
+            canvas7.getPad(iPad).getAxisZ().setLog(true);
+            canvas7.draw(h1timeSlTh.get(new Coordinate(iSec, iSL, k)));
+            canvas7.getPad(iPad).setTitle(Title);
+            canvas7.setPadTitlesX("time (ns)");            
+        }
+        tabbedPane.add(canvas7, "Time (In ThBins)"); 
+        
+        JFrame frame = new JFrame();
+        Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
+        frame.setSize((int) (screensize.getWidth() * .9), (int) (screensize.getHeight() * .9));
+        //frame.setLocationRelativeTo(null); //Centers on the default screen
+        //Following line makes the canvas or frame open in the same screen where the fitCtrolUI is.
+        frame.setLocationRelativeTo(fitControlFrame);//centered w.r.t fitControlUI frame
+        frame.add(tabbedPane);//(canvas);
+        frame.setVisible(true);
+    }    
+    
+    public void showBFieldDistributions(JFrame fitControlFrame, int Sec, int SL, double xNormLow, double xNormHigh) {
+        int iSec = Sec - 1, iSL = SL - 1;
+        int nSkippedThBins = 4; //Skipping marginal 4 bins from both sides
+        String Title = "";
+
+        JTabbedPane tabbedPane = new JTabbedPane();
+        EmbeddedCanvas canvas = new EmbeddedCanvas();
+        canvas.setSize(3 * 400, 2 * 400);
+        canvas.divide(3, 2);
+        for (int i = 0; i < nSL; i++) {
+            canvas.cd(i);
+            canvas.draw(h1bFieldSL[i]);
+        }
+        //canv0.save("src/images/test_bFieldAllSL.png");        
+        tabbedPane.add(canvas, "Time (In ThBins)"); 
+        
+        JFrame frame = new JFrame();
+        Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
+        frame.setSize((int) (screensize.getWidth() * .9), (int) (screensize.getHeight() * .9));
+        //frame.setLocationRelativeTo(null); //Centers on the default screen
+        //Following line makes the canvas or frame open in the same screen where the fitCtrolUI is.
+        frame.setLocationRelativeTo(fitControlFrame);//centered w.r.t fitControlUI frame
+        frame.add(tabbedPane);//(canvas);
+        frame.setVisible(true);        
+    }
+    
     protected void drawHistograms() {
         drawQuickTestPlots();
 
@@ -1157,16 +1304,16 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
             }
         }
 
-        try {
-            // Lets Run the Fitter
-            //runFitterUsing3DHists();
-
-            runFitter();    //This one does simultaneous fit over all theta bins
-            runFitterOld(); //This one fits in individual theta bins
-
-        } catch (IOException ex) {
-            Logger.getLogger(TimeToDistanceFitter.class.getName()).log(Level.SEVERE, null, ex);
-        }
+//        try {
+//            // Lets Run the Fitter
+//            //runFitterUsing3DHists();
+//
+//            runFitter();    //This one does simultaneous fit over all theta bins
+//            runFitterOld(); //This one fits in individual theta bins
+//
+//        } catch (IOException ex) {
+//            Logger.getLogger(TimeToDistanceFitter.class.getName()).log(Level.SEVERE, null, ex);
+//        }
 
         // Done running fitter
         // lets create lines we just fit
@@ -1177,8 +1324,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
          */
 
         DrawResidualsInTabbedPanes(); //5/14/17
-        
-        
+
         //drawSectorWiseCanvases();
         DrawInTabbedPanesOfSecSLTh();
 
@@ -1200,27 +1346,28 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         canv.cd(0);
         canv.draw(h1bField);
         canv.save("src/images/test_bField.png");
-        
+
         EmbeddedCanvas canv0 = new EmbeddedCanvas();
         canv0.setSize(1500, 1000);
         canv0.divide(3, 2);
         for (int i = 0; i < nSL; i++) {
             canv0.cd(i);
             canv0.draw(h1bFieldSL[i]);
-        }        
+        }
         canv0.save("src/images/test_bFieldAllSL.png");
-        
+
         EmbeddedCanvas canv1 = new EmbeddedCanvas();
-        canv1.setSize(1000, 1000);
-        canv1.divide(2, 2);
+        canv1.setSize(1200, 800);
+        canv1.divide(3, 2);
         canv1.cd(0);
-        //canv1.draw(h1fitChisqProb);
-        canv1.draw(h1fitChi2Trk);
+        canv1.draw(h1fitChisqProb);
         canv1.cd(1);
-        canv1.draw(h1ndfTrk);
+        canv1.draw(h1fitChi2Trk);
         canv1.cd(2);
-        canv1.draw(h1zVtx);
+        canv1.draw(h1ndfTrk);
         canv1.cd(3);
+        canv1.draw(h1zVtx);
+        canv1.cd(4);
         canv1.draw(h1fitChi2Trk2);//(h1fitChisqProb);
         canv1.save("src/images/test_fitChisqProb.png");
 
@@ -1405,299 +1552,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         frame.setVisible(true);
     }
 
-    //Simultaneous fits over selected theta bins
-    public void runFitterUsing3DHists() throws IOException {
-        boolean append_to_file = false;
-        FileOutputWriter file = null;
-        String str = " ";
-        try {
-            file = new FileOutputWriter("src/files/fitParametersUsing3DHists.txt", append_to_file);
-            file.Write("#Sec  SL  v0  deltanm  tMax  distbeta  delta_bfield_coefficient  b1  b2  b3  b4");
-        } catch (IOException ex) {
-            Logger.getLogger(TimeToDistanceFitter.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-        final int nFreePars = 4;
-
-        //Now get the previous fit parameters from CCDB 
-        ReadT2DparsFromCCDB rdTable = new ReadT2DparsFromCCDB("dc_test1");
-        double[][][] parsFromCCDB = new double[nSectors][nSL][nFitPars];//nFitPars = 9
-        double[][][] pars2write = new double[nSectors][nSL][nFitPars];//nFitPars = 9
-        parsFromCCDB = rdTable.parsFromCCDB;
-        pars2write = rdTable.parsFromCCDB; //Initialize with the CCDB pars
-
-        // initial guess of tMax for the 6 superlayers (cell sizes are different for each)
-        // This is one of the free parameters (par[2], but fixed for now.)
-        //double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 }; //Moved to Constants.java
-        // Now start minimization
-        double parSteps[] = {0.00001, 0.001, 0.01, 0.0001};
-        double pLow[] = {prevFitPars[0] * 0.01, prevFitPars[1] * 0.0, tMaxSL[0] * 0.4, prevFitPars[3] * 0.0};
-        double pHigh[] = {prevFitPars[0] * 3.0, prevFitPars[1] * 5.0, tMaxSL[0] * 1.6, prevFitPars[3] * 1.6};
-
-        Map<Coordinate, MnUserParameters> mapTmpUserFitParametersXTB = new HashMap<Coordinate, MnUserParameters>();
-        double prevFitPar = 0.0;
-        //for (int i = 0; i < nSectors; i++) {
-        for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)
-            for (int j = 0; j < nSL; j++) {
-                pLow[2] = tMaxSL[j] * 0.4;
-                pHigh[2] = tMaxSL[j] * 1.6;
-                //for (int k = 0; k < nThBinsVz; k++) {
-                mapOfFitFunctionsXTB.put(new Coordinate(i, j), new DCFitFunctionWithSimpleH3D(h3BTXmap, i, j, isLinearFit));
-                mapOfFitParametersXTB.put(new Coordinate(i, j), new MnUserParameters());
-                for (int p = 0; p < nFreePars; p++) {
-                    prevFitPar = prevFitPars[p]; //This is value set by hand (for now).
-                    prevFitPar = parsFromCCDB[i][j][p]; //this comes from CCDB
-                    if (p == 1) {
-                        prevFitPar = 1.5;
-                    }
-                    mapOfFitParametersXTB.get(new Coordinate(i, j)).add(parName[p], prevFitPar, parSteps[p], pLow[p], pHigh[p]);
-                }
-                //mapOfFitParameters.get(new Coordinate(i, j)).setValue(2, tMaxSL[j]);// tMax for SLth superlayer 
-                //mapOfFitParameters.get(new Coordinate(i, j)).fix(0);
-                mapOfFitParametersXTB.get(new Coordinate(i, j)).fix(1);
-                //mapOfFitParameters.get(new Coordinate(i, j)).fix(2);
-                //mapOfFitParameters.get(new Coordinate(i, j)).fix(3);
-
-                MnMigrad migrad
-                        = new MnMigrad(mapOfFitFunctionsXTB.get(new Coordinate(i, j)), mapOfFitParametersXTB.get(new Coordinate(i, j)));
-                FunctionMinimum min = migrad.minimize();
-
-                if (!min.isValid()) {
-                    // try with higher strategy
-                    System.out.println("FM is invalid, try with strategy = 2.");
-                    MnMigrad migrad2 = new MnMigrad(mapOfFitFunctionsXTB.get(new Coordinate(i, j)), min.userState(), new MnStrategy(2));
-                    min = migrad2.minimize();
-                }
-
-                mapTmpUserFitParametersXTB.put(new Coordinate(i, j), min.userParameters());
-                double[] fPars = new double[nFreePars];
-                double[] fErrs = new double[nFreePars];
-                for (int p = 0; p < nFreePars; p++) {
-                    fPars[p] = mapTmpUserFitParametersXTB.get(new Coordinate(i, j)).value(parName[p]);
-                    fErrs[p] = mapTmpUserFitParametersXTB.get(new Coordinate(i, j)).error(parName[p]);
-                }
-
-                pars2write[i][j][0] = fPars[0];
-                pars2write[i][j][1] = fPars[1];
-                pars2write[i][j][2] = fPars[2];
-                pars2write[i][j][3] = fPars[3];
-
-                mapOfUserFitParametersXTB.put(new Coordinate(i, j), fPars);
-                //} // end of nThBinsVz loop
-            } // end of superlayer loop
-        } // end of sector loop
-
-        for (int i = 0; i < nSectors; i++) {
-            for (int j = 0; j < nSL; j++) {
-                if (!(file == null)) {
-                    str = String.format("%d %d %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f",
-                            i + 1, j + 1, pars2write[i][j][0], pars2write[i][j][1], pars2write[i][j][2],
-                            pars2write[i][j][3], pars2write[i][j][4], pars2write[i][j][5],
-                            pars2write[i][j][6], pars2write[i][j][7], pars2write[i][j][8]);
-                    file.Write(str);
-                }
-            }
-        }
-        if (!(file == null)) {
-            file.Close();
-        }
-    }
-
-    //Simultaneous fits over selected theta bins
-    public void runFitter() throws IOException {
-
-        boolean append_to_file = false;
-        FileOutputWriter file = null;
-        String str = " ";
-        try {
-            file = new FileOutputWriter("src/files/fitParameters.txt", append_to_file);
-            file.Write("#Sec  SL  v0  deltanm  tMax  distbeta  delta_bfield_coefficient  b1  b2  b3  b4");
-        } catch (IOException ex) {
-            Logger.getLogger(TimeToDistanceFitter.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-        final int nFreePars = 4;
-
-        //Now get the previous fit parameters from CCDB 
-        ReadT2DparsFromCCDB rdTable = new ReadT2DparsFromCCDB("dc_test1");
-        double[][][] parsFromCCDB = new double[nSectors][nSL][nFitPars];//nFitPars = 9
-        double[][][] pars2write = new double[nSectors][nSL][nFitPars];//nFitPars = 9
-        parsFromCCDB = rdTable.parsFromCCDB;
-        pars2write = rdTable.parsFromCCDB; //Initialize with the CCDB pars
-
-        // initial guess of tMax for the 6 superlayers (cell sizes are different for each)
-        // This is one of the free parameters (par[2], but fixed for now.)
-        //double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 }; //Moved to Constants.java
-        // Now start minimization
-        double parSteps[] = {0.00001, 0.001, 0.01, 0.0001};
-        double pLow[] = {prevFitPars[0] * 0.01, prevFitPars[1] * 0.0, tMaxSL[0] * 0.4, prevFitPars[3] * 0.0};
-        double pHigh[] = {prevFitPars[0] * 3.0, prevFitPars[1] * 5.0, tMaxSL[0] * 1.6, prevFitPars[3] * 1.6};
-
-        Map<Coordinate, MnUserParameters> mapTmpUserFitParameters = new HashMap<Coordinate, MnUserParameters>();
-        double prevFitPar = 0.0;
-        //for (int i = 0; i < nSectors; i++) {
-        for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)
-            for (int j = 0; j < nSL; j++) {
-                pLow[2] = tMaxSL[j] * 0.4;
-                pHigh[2] = tMaxSL[j] * 1.6;
-                //for (int k = 0; k < nThBinsVz; k++) {
-                mapOfFitFunctions.put(new Coordinate(i, j),
-                        //new DCFitFunction(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX(), j, k, isLinearFit));
-                        //new DCFitFunction(h2timeVtrkDocaVZ, i, j, k, isLinearFit));
-                        new DCFitFunction(h2timeVtrkDocaVZ, i, j, isLinearFit));
-                mapOfFitParameters.put(new Coordinate(i, j), new MnUserParameters());
-                for (int p = 0; p < nFreePars; p++) {
-                    prevFitPar = prevFitPars[p]; //This is value set by hand (for now).
-                    prevFitPar = parsFromCCDB[i][j][p]; //this comes from CCDB
-                    if (p == 1) {
-                        prevFitPar = 1.5;
-                    }
-                    mapOfFitParameters.get(new Coordinate(i, j)).add(parName[p], prevFitPar, parSteps[p], pLow[p], pHigh[p]);
-                }
-                //mapOfFitParameters.get(new Coordinate(i, j)).setValue(2, tMaxSL[j]);// tMax for SLth superlayer 
-                //mapOfFitParameters.get(new Coordinate(i, j)).fix(0);
-                mapOfFitParameters.get(new Coordinate(i, j)).fix(1);
-                //mapOfFitParameters.get(new Coordinate(i, j)).fix(2);
-                //mapOfFitParameters.get(new Coordinate(i, j)).fix(3);
-
-                MnMigrad migrad
-                        = new MnMigrad(mapOfFitFunctions.get(new Coordinate(i, j)), mapOfFitParameters.get(new Coordinate(i, j)));
-                FunctionMinimum min = migrad.minimize();
-
-                if (!min.isValid()) {
-                    // try with higher strategy
-                    System.out.println("FM is invalid, try with strategy = 2.");
-                    MnMigrad migrad2 = new MnMigrad(mapOfFitFunctions.get(new Coordinate(i, j)), min.userState(), new MnStrategy(2));
-                    min = migrad2.minimize();
-                }
-
-                mapTmpUserFitParameters.put(new Coordinate(i, j), min.userParameters());
-                double[] fPars = new double[nFreePars];
-                double[] fErrs = new double[nFreePars];
-                for (int p = 0; p < nFreePars; p++) {
-                    fPars[p] = mapTmpUserFitParameters.get(new Coordinate(i, j)).value(parName[p]);
-                    fErrs[p] = mapTmpUserFitParameters.get(new Coordinate(i, j)).error(parName[p]);
-                }
-
-                pars2write[i][j][0] = fPars[0];
-                pars2write[i][j][1] = fPars[1];
-                pars2write[i][j][2] = fPars[2];
-                pars2write[i][j][3] = fPars[3];
-
-                mapOfUserFitParameters.put(new Coordinate(i, j), fPars);
-                //} // end of nThBinsVz loop
-            } // end of superlayer loop
-        } // end of sector loop
-
-        for (int i = 0; i < nSectors; i++) {
-            for (int j = 0; j < nSL; j++) {
-                if (!(file == null)) {
-                    str = String.format("%d %d %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f",
-                            i + 1, j + 1, pars2write[i][j][0], pars2write[i][j][1], pars2write[i][j][2],
-                            pars2write[i][j][3], pars2write[i][j][4], pars2write[i][j][5],
-                            pars2write[i][j][6], pars2write[i][j][7], pars2write[i][j][8]);
-                    file.Write(str);
-                }
-            }
-        }
-        if (!(file == null)) {
-            file.Close();
-        }
-    }
-
-    //Different fits in individual theta bins
-    public void runFitterOld() throws IOException {
-
-        boolean append_to_file = false;
-        FileOutputWriter file = null;
-        String str = "";
-
-        try {
-            file = new FileOutputWriter("src/files/fitParametersForEachThBin.txt", append_to_file);
-            file.Write("Sec  SL  ThBin v0  deltanm  tMax  distbeta  delta_bfield_coefficient  b1  b2  b3  b4");
-        } catch (IOException ex) {
-            Logger.getLogger(TimeToDistanceFitter.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-        final int nFreePars = 4;
-
-        // initial guess of tMax for the 6 superlayers (cell sizes are different for each)
-        // This is one of the free parameters (par[2], but fixed for now.)
-        //double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 }; //Moved to Constants.java
-        // Now start minimization
-        double parSteps[] = {0.00001, 0.001, 0.01, 0.0001};
-        double pLow[] = {prevFitPars[0] * 0.0, prevFitPars[1] * 0.0, tMaxSL[0] * 0.0, prevFitPars[3] * 0.0};
-        double pHigh[] = {prevFitPars[0] * 3.0, prevFitPars[1] * 4.0, tMaxSL[0] * 4.0, prevFitPars[3] * 3.0};
-
-        Map<Coordinate, MnUserParameters> mapTmpUserFitParameters = new HashMap<Coordinate, MnUserParameters>();
-
-        //for (int i = 0; i < nSectors; i++) {
-        for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)
-            for (int j = 0; j < nSL; j++) {
-                pLow[2] = tMaxSL[j] * 0.8;
-                pHigh[2] = tMaxSL[j] * 1.2;
-                for (int k = 0; k < nThBinsVz; k++) {
-                    mapOfFitFunctionsOld.put(new Coordinate(i, j, k),
-                            new DCFitFunctionForEachThBin(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX(), j, k, isLinearFit));
-                    mapOfFitParametersOld.put(new Coordinate(i, j, k), new MnUserParameters());
-                    for (int p = 0; p < nFreePars; p++) {
-                        if (p == 0) {
-                            prevFitPars[p] = 0.0053;
-                        }
-                        if (p == 1) {
-                            prevFitPars[p] = 1.5;
-                        }
-                        if (p == 2) {
-                            prevFitPars[p] = 627.8;
-                        }
-                        if (p == 3) {
-                            prevFitPars[p] = 0.1171;
-                        }
-                        //if(p==0) prevFitPars[p] = 0.007;
-                        //if(p==2) prevFitPars[p] = 0.007;
-                        mapOfFitParametersOld.get(new Coordinate(i, j, k)).add(parName[p], prevFitPars[p], parSteps[p], pLow[p], pHigh[p]);
-                    }
-                    mapOfFitParametersOld.get(new Coordinate(i, j, k)).setValue(2, tMaxSL[j]);// tMax for SLth superlayer
-                    //mapOfFitParametersOld.get(new Coordinate(i, j, k)).fix(0);
-                    //mapOfFitParametersOld.get(new Coordinate(i, j, k)).fix(1);
-                    //mapOfFitParametersOld.get(new Coordinate(i, j, k)).fix(2);
-                    //mapOfFitParametersOld.get(new Coordinate(i, j, k)).fix(3);
-                    MnMigrad migrad
-                            = new MnMigrad(mapOfFitFunctionsOld.get(new Coordinate(i, j, k)), mapOfFitParametersOld.get(new Coordinate(i, j, k)));
-                    FunctionMinimum min = migrad.minimize();
-
-                    if (!min.isValid()) {
-                        // try with higher strategy
-                        System.out.println("FM is invalid, try with strategy = 2.");
-                        MnMigrad migrad2 = new MnMigrad(mapOfFitFunctionsOld.get(new Coordinate(i, j, k)), min.userState(), new MnStrategy(2));
-                        min = migrad2.minimize();
-                    }
-                    mapTmpUserFitParameters.put(new Coordinate(i, j, k), min.userParameters());
-                    double[] fPars = new double[nFreePars];
-                    double[] fErrs = new double[nFreePars];
-                    for (int p = 0; p < nFreePars; p++) {
-                        fPars[p] = mapTmpUserFitParameters.get(new Coordinate(i, j, k)).value(parName[p]);
-                        fErrs[p] = mapTmpUserFitParameters.get(new Coordinate(i, j, k)).error(parName[p]);
-                    }
-
-                    //Writing fit parameters to an output file
-                    if (!(file == null)) {
-                        /*file.Write((i + 1) + "  " + (j + 1) + "  " + (k + 1) + "  " + fPars[0]
-                                + "  " + fPars[1] + "  " + fPars[2] + "  " + fPars[3]); */
-                        str = String.format("%d %d %d %5.4f %5.4f %5.4f %5.4f",
-                                i + 1, j + 1, k + 1, fPars[0], fPars[1], fPars[2], fPars[3]);
-                        file.Write(str);
-                    }
-                    mapOfUserFitParametersOld.put(new Coordinate(i, j, k), fPars);
-                } // end of nThBinsVz loop
-            } // end of superlayer loop
-        } // end of sector loop
-
-        if (!(file == null)) {
-            file.Close();
-        }
-    }
-
+    
     private void createFitLinesXTB() {
         double dMax;
         //for (int i = 0; i < nSectors; i++) {
@@ -1848,14 +1703,14 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         MakeAndDrawXTProjectionsOfXTBhists();
         System.out.println("Called MakeAndDrawXTProjectionsOfXTBhists();");
 
-        SliceViewer(this);
+        //SliceViewer(this); //Now can be opened with a button in FitControlUI
 
         OpenFitControlUI(this);
         //drawHistograms(); //Disabled 4/3/17 - to control it by clicks in FitConrolUI.
     }
 
     private void saveNtuple() {
-        nTupletimeVtrkDocaVZ.write("src/files/pionTest.evio");
+//        nTupletimeVtrkDocaVZ.write("src/files/pionTest.evio");
     }
 
     public static void main(String[] args) {
