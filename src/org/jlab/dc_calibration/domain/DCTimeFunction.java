@@ -140,11 +140,16 @@ public class DCTimeFunction {
 
     private double isReducedAngle(double alpha) {
         double ralpha;
+        
+        //first make it a positive/absoulte number
         ralpha = Math.abs(alpha * deg2rad);
 
+        //Next bring it down (reduce) to within the range (0,60) degrees
         while (ralpha > Math.PI / 3.0) {
             ralpha -= Math.PI / 3.0;
         }
+        
+        //Finally, transform it to be within (-30,30) degrees.
         if (ralpha > Math.PI / 6.0) {
             ralpha = Math.PI / 3.0 - ralpha;
         }
