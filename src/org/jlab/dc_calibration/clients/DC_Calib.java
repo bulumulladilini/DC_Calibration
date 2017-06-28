@@ -22,6 +22,8 @@ import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -173,12 +175,21 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 
         panelForVariousControls = new JPanel(new BorderLayout());
         panelForVariousControls.setBorder(BorderFactory.createEtchedBorder());
-        //addToOpenFilePanel(); //Moved below
+        
         radioPanel = new JPanel(new GridLayout(0, 1));
         addToT0CorButton();
         addToRecoButton();
         addToRadioPanel();
-        addToOpenFilePanel();//add File-chooser, radio panel etc to the control panel
+        
+        
+        
+        bTimeToDistance.setPreferredSize(new Dimension(frameSize.width / 9, frameSize.height / 9));
+        buttonPanel = new JPanel(new BorderLayout());//(0, 1));//GridLayout(gridSize, gridSize, 1, 1));
+        addToButtonPanel();
+        
+        
+        //addToOpenFilePanel();//add File-chooser, radio panel etc to the control panel
+        addButtonsToAllButtonsPanel();
         addToCCDBwriterButton(); //CCDB writer for tvsx parameters
         
         panelForWelcomeAndOpenFile = new JPanel(new BorderLayout());
@@ -187,10 +198,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         panelImg = new JPanel(new BorderLayout());
         addToPanelImage();
 
-        buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(gridSize, gridSize, 1, 1));
 
-        addToButtonPanel();
 
         centerPanel = new JPanel(new BorderLayout());
         addToCenterPanel();
@@ -225,6 +233,30 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         panelForVariousControls.add(bCCDBwriter, BorderLayout.LINE_END);
     }
 
+    
+    //Initialize all UI components
+    public void addButtonsToAllButtonsPanel() {       
+        panelForVariousControls = new JPanel(new GridBagLayout());
+        //panelMain.add(panelForm);
+        
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 0;
+        
+        c.anchor = GridBagConstraints.LINE_START; //kp: to align components to the right side of grid cells.
+        panelForVariousControls.add(bT0Correction,c); 
+        c.gridx++; 
+        panelForVariousControls.add(bReconstruction,c);
+        c.gridx++; 
+        panelForVariousControls.add(radioPanel,c);        
+        c.gridx++; 
+        panelForVariousControls.add(bFileChooser,c);        
+        c.gridx++; 
+        panelForVariousControls.add(buttonPanel,c);//add(bTimeToDistance,c); 
+        c.gridx++; 
+        panelForVariousControls.add(bCCDBwriter,c); 
+    }    
+    
     private void addToWelcomePanel() {
         panelForWelcomeAndOpenFile.add(bannerPanel, BorderLayout.NORTH);
         panelForWelcomeAndOpenFile.add(panelForVariousControls, BorderLayout.SOUTH);
@@ -403,13 +435,13 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         images.setPreferredSize(new Dimension((int) (width / 3.5), (int) (height / 3.5)));
         centerPanel.add(images, BorderLayout.WEST);
 
-        centerPanel.add(buttonPanel, BorderLayout.CENTER);
+        //centerPanel.add(buttonPanel, BorderLayout.CENTER);
         centerPanel.add(Box.createVerticalGlue(), BorderLayout.SOUTH);
 
         JScrollPane scroll = new JScrollPane (textArea, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
                 JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);        
         //JScrollPane scroll = new JScrollPane(textArea);
-        scroll.setPreferredSize(new Dimension((int) (width / 2), (int) (height / 2)));
+        scroll.setPreferredSize(new Dimension((int) (width / 1.4), (int) (height / 2)));
         //scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         centerPanel.add(scroll, BorderLayout.EAST);        
     }
